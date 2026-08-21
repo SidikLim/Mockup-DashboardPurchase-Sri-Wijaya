@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Outstanding PO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDF1F6;
+    --surface:#FFFFFF;
+    --surface-alt:#F5F7FB;
+    --border:#E1E7F0;
+    --ink:#16202E;
+    --ink-soft:#5B6779;
+    --ink-faint:#8B95A6;
+    --blue-900:#122A55;
+    --blue-800:#17346B;
+    --blue-700:#1E4FBF;
+    --blue-600:#2F63E0;
+    --blue-500:#4C7EF2;
+    --blue-100:#E4ECFC;
+    --blue-50:#F2F5FE;
+    --green-600:#0E9C6F;
+    --green-100:#E4F7EE;
+    --amber-600:#C7791F;
+    --amber-100:#FBEBD7;
+    --red-600:#DB4B5C;
+    --red-100:#FCE9EB;
+    --radius:12px;
+    --shadow:0 1px 2px rgba(20,34,64,.04), 0 8px 24px -12px rgba(20,34,64,.10);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Inter',system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Sora',system-ui,sans-serif;}
+
+  .wrap{max-width:1800px;margin:0 auto;padding:28px 32px 60px;}
+
+  /* FILTER CARD */
+  .filter-card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:20px 22px;
+    margin-bottom:22px;
+  }
+  .filter-head{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:16px;
+  }
+  .filter-head-left{display:flex;align-items:center;gap:9px;}
+  .filter-head-left .ic{
+    width:26px;height:26px;border-radius:7px;background:var(--blue-50);
+    display:flex;align-items:center;justify-content:center;color:var(--blue-700);
+  }
+  .filter-head h2{font-size:14.5px;margin:0;font-weight:600;color:var(--ink);}
+  .filter-head-right{display:flex;align-items:center;gap:6px;}
+  .filter-reset{
+    font-size:12.5px;color:var(--blue-700);background:none;border:none;cursor:pointer;
+    font-family:'Inter';font-weight:600;padding:4px 8px;border-radius:6px;
+  }
+  .filter-reset:hover{background:var(--blue-50);}
+  .filter-toggle{
+    display:flex;align-items:center;gap:6px;
+    font-size:12.5px;color:var(--ink-soft);background:var(--surface-alt,#F3F5F8);
+    border:1px solid var(--border);cursor:pointer;
+    font-family:'Inter';font-weight:600;padding:5px 10px;border-radius:7px;
+  }
+  .filter-toggle:hover{border-color:var(--blue-500);color:var(--blue-700);}
+  .filter-toggle svg{transition:.2s transform;flex-shrink:0;}
+  .filter-toggle.collapsed svg{transform:rotate(-90deg);}
+  .filter-grid{
+    display:grid;
+    grid-template-columns:1.9fr repeat(5,minmax(0,1fr));
+    grid-template-rows:1fr;
+    gap:14px;
+    transition:.22s grid-template-rows, .22s opacity, .22s margin;
+  }
+  .filter-grid.collapsed{
+    grid-template-rows:0fr;
+    opacity:0;
+    margin-top:-14px;
+    overflow:hidden;
+  }
+  .filter-grid > .field{min-height:0;}
+  .field label{
+    display:block;font-size:11px;font-weight:600;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;
+  }
+  .dropdown{position:relative;}
+  .dd-trigger{
+    width:100%;text-align:left;
+    background:var(--surface-alt);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:9px 10px;
+    font-size:13px;
+    color:var(--ink);
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;
+    font-family:'Inter';
+    transition:.15s;
+  }
+  .dd-trigger:hover{border-color:var(--blue-500);background:#fff;}
+  .dd-trigger.active{border-color:var(--blue-600);box-shadow:0 0 0 3px var(--blue-50);background:#fff;}
+  .dd-trigger span.count{
+    background:var(--blue-100);color:var(--blue-800);
+    font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:20px;margin-left:6px;
+  }
+  .dd-trigger .placeholder{color:var(--ink-faint);}
+  .dd-panel{
+    position:absolute;top:calc(100% + 6px);left:0;right:0;
+    background:#fff;border:1px solid var(--border);border-radius:9px;
+    box-shadow:0 10px 30px rgba(15,23,42,.12);
+    z-index:40;max-height:230px;overflow-y:auto;padding:6px;
+    display:none;
+  }
+  .dd-panel.open{display:block;}
+  .dd-search{
+    width:100%;border:1px solid var(--border);border-radius:6px;padding:7px 8px;
+    font-size:12.5px;margin-bottom:6px;font-family:'Inter';outline:none;
+  }
+  .dd-search:focus{border-color:var(--blue-600);}
+  .dd-opt{
+    display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;
+    font-size:13px;cursor:pointer;
+  }
+  .dd-opt:hover{background:var(--blue-50);}
+  .dd-opt input{accent-color:var(--blue-700);}
+  .date-range{display:flex;gap:8px;align-items:center;}
+  .date-range input{
+    flex:1 1 0;min-width:0;width:100%;border:1px solid var(--border);background:var(--surface-alt);
+    border-radius:8px;padding:8px 6px;font-size:12px;font-family:'Inter';color:var(--ink);
+  }
+  .date-range input:focus{outline:none;border-color:var(--blue-600);background:#fff;}
+  .date-sep{color:var(--ink-faint);font-size:11px;flex:0 0 auto;}
+
+  /* TABS */
+  .tabs{
+    display:flex;gap:6px;background:var(--surface);
+    border:1px solid var(--border);border-radius:11px;padding:5px;
+    width:fit-content;margin-bottom:18px;box-shadow:var(--shadow);
+  }
+  .tab-btn{
+    border:none;background:none;padding:9px 20px;border-radius:8px;
+    font-family:'Sora';font-weight:600;font-size:13.5px;color:var(--ink-soft);
+    cursor:pointer;transition:.15s;
+  }
+  .tab-btn.active{background:var(--blue-700);color:#fff;box-shadow:0 2px 8px rgba(21,94,158,.3);}
+  .tab-btn:not(.active):hover{background:var(--surface-alt);color:var(--ink);}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  /* GRID CARD */
+  .grid-card{
+    background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;
+  }
+  .grid-head{
+    background:linear-gradient(135deg,var(--blue-800),var(--blue-600));
+    padding:16px 22px;display:flex;align-items:center;justify-content:space-between;
+  }
+  .grid-head h3{color:#fff;margin:0;font-size:15.5px;font-weight:600;letter-spacing:.2px;}
+  .status-pills{display:flex;gap:6px;background:rgba(255,255,255,.14);padding:4px;border-radius:9px;}
+  .status-pill{
+    border:none;background:none;padding:7px 13px;border-radius:6px;
+    font-size:12px;font-weight:600;color:rgba(255,255,255,.8);cursor:pointer;
+    font-family:'Inter';transition:.15s;
+  }
+  .status-pill.active{background:#fff;color:var(--blue-800);}
+  .pill-count{
+    display:inline-block;min-width:18px;text-align:center;
+    margin-left:5px;padding:1px 6px;border-radius:20px;
+    font-size:10.5px;font-weight:700;
+    background:rgba(255,255,255,.22);color:inherit;
+  }
+  .status-pill.active .pill-count{background:var(--blue-100);color:var(--blue-800);}
+
+  .table-scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    background:var(--surface-alt);
+    text-align:left;padding:11px 16px;
+    font-size:11px;font-weight:700;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.4px;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;cursor:pointer;user-select:none;
+    position:relative;
+  }
+  thead th:hover{color:var(--blue-700);background:#EAF0F8;}
+  thead th .th-flex{display:flex;align-items:center;gap:5px;}
+  thead th .sort-ic{font-size:10px;color:var(--ink-faint);}
+  thead th.sorted .sort-ic{color:var(--blue-700);}
+  tbody td{
+    padding:11px 16px;border-bottom:1px solid var(--border);
+    color:var(--ink);overflow-wrap:anywhere;word-break:break-word;
+  }
+  tbody td.nowrap, tbody td.num, tbody td.link-cell, tbody td.idx{white-space:nowrap;}
+  tbody tr:hover{background:var(--blue-50);}
+  tbody tr:last-child td{border-bottom:none;}
+  .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:500;}
+  .link-cell{color:var(--blue-700);font-weight:600;cursor:pointer;}
+  .link-cell:hover{text-decoration:underline;}
+  .muted{color:var(--ink-faint);}
+  .idx{color:var(--ink-faint);font-size:12px;}
+
+  .aging{
+    display:inline-flex;align-items:center;gap:6px;padding:4px 10px;
+    border-radius:20px;font-size:12px;font-weight:700;
+  }
+  .aging.ok{background:var(--green-100);color:#0f7a37;}
+  .aging.warn{background:var(--amber-100);color:#9a5b04;}
+  .aging.late{background:var(--red-100);color:#b91c1c;}
+  .aging.done{background:#F1F5F9;color:var(--ink-soft);}
+  .aging .dotb{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+  .grid-foot{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:13px 22px;border-top:1px solid var(--border);background:var(--surface-alt);
+    gap:14px;flex-wrap:wrap;
+  }
+  .grid-foot .count{font-size:12.5px;color:var(--ink-soft);}
+  .foot-right{display:flex;align-items:center;gap:18px;}
+  .page-size{display:flex;align-items:center;gap:8px;}
+  .page-size label{font-size:12.5px;color:var(--ink-soft);font-weight:600;white-space:nowrap;}
+  .page-size select{
+    border:1px solid var(--border);background:#fff;border-radius:7px;
+    padding:6px 9px;font-size:12.5px;font-family:'Inter';color:var(--ink);
+    cursor:pointer;
+  }
+  .page-size select:focus{outline:none;border-color:var(--blue-600);}
+  .pager{display:flex;align-items:center;gap:8px;}
+  .pager button{
+    width:28px;height:28px;border-radius:7px;border:1px solid var(--border);
+    background:#fff;color:var(--ink-soft);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .pager button:hover{border-color:var(--blue-600);color:var(--blue-700);}
+  .pager span{font-size:12.5px;color:var(--ink);font-weight:600;}
+
+  .empty{padding:50px 20px;text-align:center;color:var(--ink-soft);}
+  .empty .ic{font-size:30px;margin-bottom:8px;}
+
+  @media(max-width:1100px){
+    .filter-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  }
+  @media(max-width:640px){
+    .filter-grid{grid-template-columns:repeat(1,minmax(0,1fr));}
+    .wrap{padding:20px 14px 40px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- FILTER GLOBAL -->
+  <div class="filter-card">
+    <div class="filter-head">
+      <div class="filter-head-left">
+        <div class="ic">&#9881;</div>
+        <h2>Filter Global</h2>
+      </div>
+      <div class="filter-head-right">
+        <button class="filter-reset" id="resetBtn">Reset semua filter</button>
+        <button class="filter-toggle" id="filterToggleBtn" aria-expanded="true">
+          <span id="filterToggleLabel">Sembunyikan</span>
+          <svg id="filterToggleIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="filter-grid" id="filterGrid">
+      <div class="field">
+        <label>Periode Tanggal PR</label>
+        <div class="date-range">
+          <input type="date" id="dateFrom">
+          <span class="date-sep">s.d.</span>
+          <input type="date" id="dateTo">
+        </div>
+      </div>
+      <div class="field" id="fProject"></div>
+      <div class="field" id="fDepartment"></div>
+      <div class="field" id="fPic"></div>
+      <div class="field" id="fProduct"></div>
+      <div class="field" id="fPr"></div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="project">Project</button>
+    <button class="tab-btn" data-tab="reguler">Reguler / Workshop</button>
+  </div>
+
+  <!-- PROJECT PANEL -->
+  <div class="panel active" id="panel-project">
+    <div class="grid-card">
+      <div class="grid-head">
+        <h3>List Data by Project</h3>
+        <div class="status-pills" id="statusPills-project">
+          <button class="status-pill active" data-status="pending">Belum PO <span class="pill-count" id="cnt-project-pending"></span></button>
+          <button class="status-pill" data-status="done">Sudah PO <span class="pill-count" id="cnt-project-done"></span></button>
+          <button class="status-pill" data-status="all">All <span class="pill-count" id="cnt-project-all"></span></button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr id="thead-project"></tr></thead>
+          <tbody id="tbody-project"></tbody>
+        </table>
+      </div>
+      <div class="grid-foot">
+        <span class="count" id="count-project"></span>
+        <div class="foot-right">
+          <div class="page-size">
+            <label for="pageSize-project">Tampilkan</label>
+            <select id="pageSize-project">
+              <option value="10">10</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="500">500</option>
+              <option value="1000">1000</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+          <div class="pager"><button>&lsaquo;</button><span id="page-project">1 / 1</span><button>&rsaquo;</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGULER PANEL -->
+  <div class="panel" id="panel-reguler">
+    <div class="grid-card">
+      <div class="grid-head">
+        <h3>List Data Reguler / Workshop</h3>
+        <div class="status-pills" id="statusPills-reguler">
+          <button class="status-pill active" data-status="pending">Belum PO <span class="pill-count" id="cnt-reguler-pending"></span></button>
+          <button class="status-pill" data-status="done">Sudah PO <span class="pill-count" id="cnt-reguler-done"></span></button>
+          <button class="status-pill" data-status="all">All <span class="pill-count" id="cnt-reguler-all"></span></button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr id="thead-reguler"></tr></thead>
+          <tbody id="tbody-reguler"></tbody>
+        </table>
+      </div>
+      <div class="grid-foot">
+        <span class="count" id="count-reguler"></span>
+        <div class="foot-right">
+          <div class="page-size">
+            <label for="pageSize-reguler">Tampilkan</label>
+            <select id="pageSize-reguler">
+              <option value="10">10</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="500">500</option>
+              <option value="1000">1000</option>
+              <option value="all">All</option>
+            </select>
+          </div>
+          <div class="pager"><button>&lsaquo;</button><span id="page-reguler">1 / 1</span><button>&rsaquo;</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+
+// ---------- MOCK DATA (mengikuti struktur kolom pada spesifikasi) ----------
+const projectData = [
+  {tgl:'2026-05-18', pr:'PR335/05/26/0051', mr:'MR 508', keterangan:'-', dept:'PROJECT KPC 335', kode:'PROJECT KPC 335', produk:'Perpanjangan Microsoft Sharepoint', qtyPR:1, qtyPO:0, day:43},
+  {tgl:'2026-06-22', pr:'PR335/06/26/0016', mr:'-', keterangan:'-', dept:'GA-HR DEPARTEMEN', kode:'PROJECT KPC 335', produk:'Granit 60x60', qtyPR:11, qtyPO:0, day:8},
+  {tgl:'2026-06-22', pr:'PR335/06/26/0016', mr:'-', keterangan:'-', dept:'GA-HR DEPARTEMEN', kode:'PROJECT KPC 335', produk:'Hinge Glass / Engsel Kaca', qtyPR:2, qtyPO:0, day:8},
+  {tgl:'2026-06-22', pr:'PR335/06/26/0016', mr:'-', keterangan:'-', dept:'GA-HR DEPARTEMEN', kode:'PROJECT KPC 335', produk:'Semen Tonasa', qtyPR:7, qtyPO:0, day:8},
+  {tgl:'2026-06-24', pr:'PR335/06/26/0021', mr:'MR 511', keterangan:'-', dept:'PROJECT KPC 335', kode:'PROJECT KPC 335', produk:'Plate SS400 [2mm 1000x2000]', qtyPR:4, qtyPO:4, day:6},
+  {tgl:'2026-06-10', pr:'PR335/06/26/0008', mr:'MR 502', keterangan:'-', dept:'PROJECT KPC 335', kode:'PROJECT KPC 335', produk:'Kabel NYY 4x6mm', qtyPR:200, qtyPO:120, day:20},
+  {tgl:'2026-06-02', pr:'PR335/06/26/0002', mr:'-', keterangan:'-', dept:'GA-HR DEPARTEMEN', kode:'PROJECT KPC 335', produk:'Cat Tembok Interior', qtyPR:15, qtyPO:15, day:28},
+  {tgl:'2026-05-29', pr:'PR335/05/26/0044', mr:'MR 499', keterangan:'-', dept:'PROJECT KPC 335', kode:'PROJECT KPC 335', produk:'Besi Hollow 4x4', qtyPR:50, qtyPO:0, day:32},
+  {tgl:'2026-07-01', pr:'PR335/07/26/0003', mr:'MR 520', keterangan:'-', dept:'PROJECT KPC 335', kode:'PROJECT KPC 335', produk:'Keramik Lantai 40x40', qtyPR:30, qtyPO:10, day:9},
+  {tgl:'2026-07-05', pr:'PR335/07/26/0007', mr:'-', keterangan:'-', dept:'GA-HR DEPARTEMEN', kode:'PROJECT KPC 335', produk:'Pipa PVC 3 inch', qtyPR:20, qtyPO:20, day:5},
+];
+
+const regulerData = [
+  {tgl:'2026-04-22', pr:'PR2604044/STU/GA', pic:'Adika', dept:'GA-HR DEPARTEMEN', kode:'-', produk:'Anker Power Conf [A3301]', qtyPR:1, qtyPO:0, day:69},
+  {tgl:'2026-06-03', pr:'PR2606005/STU/GA', pic:'Adika', dept:'GA-HR DEPARTEMEN', kode:'-', produk:'Plastik File (PP Pocket) - Bambi', qtyPR:2, qtyPO:0, day:27},
+  {tgl:'2026-06-09', pr:'PR2606018/STU/GA', pic:'Syaffi', dept:'GA-HR DEPARTEMEN', kode:'-', produk:'Direct Thermal Sticker [58x40mm x1line] - Eprint', qtyPR:5, qtyPO:0, day:21},
+  {tgl:'2026-06-10', pr:'PR2606021/STU/PST', pic:'Irfan', dept:'PUSAT', kode:'-', produk:'Insert - CNMG [IC907]', qtyPR:150, qtyPO:0, day:20},
+  {tgl:'2026-06-10', pr:'PR2606021/STU/PST', pic:'Irfan', dept:'PUSAT', kode:'-', produk:'Insert - DNMG - Carbide [150404TF]', qtyPR:150, qtyPO:0, day:20},
+  {tgl:'2026-06-15', pr:'PR2606030/STU/PST', pic:'Budi', dept:'PUSAT', kode:'-', produk:'Sarung Tangan Safety', qtyPR:24, qtyPO:24, day:15},
+  {tgl:'2026-05-20', pr:'PR2605012/STU/GA', pic:'Adika', dept:'GA-HR DEPARTEMEN', kode:'-', produk:'Tinta Printer Epson 003', qtyPR:6, qtyPO:6, day:41},
+  {tgl:'2026-07-02', pr:'PR2607002/STU/PST', pic:'Irfan', dept:'PUSAT', kode:'-', produk:'Mata Bor HSS 10mm', qtyPR:10, qtyPO:4, day:8},
+  {tgl:'2026-06-28', pr:'PR2606044/STU/GA', pic:'Syaffi', dept:'GA-HR DEPARTEMEN', kode:'-', produk:'Kertas A4 80gr', qtyPR:40, qtyPO:40, day:12},
+  {tgl:'2026-07-10', pr:'PR2607010/STU/PST', pic:'Budi', dept:'PUSAT', kode:'-', produk:'Oli Mesin 10W-40', qtyPR:12, qtyPO:0, day:1},
+];
+
+projectData.forEach(r=>r.qtySisa = Math.max(r.qtyPR-r.qtyPO,0));
+regulerData.forEach(r=>r.qtySisa = Math.max(r.qtyPR-r.qtyPO,0));
+
+function fmtDate(iso){
+  const d=new Date(iso+'T00:00:00');
+  return d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function agingBadge(day, sisa){
+  if(sisa===0) return `<span class="aging done"><span class="dotb"></span>Selesai · ${day}h</span>`;
+  let cls='ok'; if(day>30) cls='late'; else if(day>=15) cls='warn';
+  return `<span class="aging ${cls}"><span class="dotb"></span>${day} hari</span>`;
+}
+
+// ---------- CONFIG PER TAB ----------
+const configs = {
+  project: {
+    data: projectData,
+    columns: [
+      {key:'tgl', label:'Tanggal PR', type:'date'},
+      {key:'pr', label:'No. PR', type:'link'},
+      {key:'mr', label:'No. MR', type:'text'},
+      {key:'keterangan', label:'Keterangan', type:'text'},
+      {key:'dept', label:'Department', type:'text'},
+      {key:'kode', label:'Kode Project', type:'text'},
+      {key:'produk', label:'Product Name', type:'text'},
+      {key:'qtyPR', label:'Qty PR', type:'num'},
+      {key:'qtyPO', label:'Qty PO', type:'num'},
+      {key:'qtySisa', label:'Qty Sisa', type:'num'},
+      {key:'day', label:'Day (Aging)', type:'aging'},
+    ],
+    state:{sortKey:'day', sortDir:'desc', status:'pending', page:1, pageSize:10}
+  },
+  reguler: {
+    data: regulerData,
+    columns: [
+      {key:'tgl', label:'Tanggal PR', type:'date'},
+      {key:'pr', label:'No. PR', type:'link'},
+      {key:'pic', label:'Keterangan', type:'text'},
+      {key:'dept', label:'Department', type:'text'},
+      {key:'produk', label:'Product Name', type:'text'},
+      {key:'qtyPR', label:'Qty PR', type:'num'},
+      {key:'qtyPO', label:'Qty PO', type:'num'},
+      {key:'qtySisa', label:'Qty Sisa', type:'num'},
+      {key:'day', label:'Day (Aging)', type:'aging'},
+    ],
+    state:{sortKey:'day', sortDir:'desc', status:'pending', page:1, pageSize:10}
+  }
+};
+
+function renderHead(tabKey){
+  const cfg = configs[tabKey];
+  const th = document.getElementById('thead-'+tabKey);
+  th.innerHTML = '<th style="width:34px">#</th>' + cfg.columns.map(c=>{
+    const sorted = cfg.state.sortKey===c.key;
+    const arrow = sorted ? (cfg.state.sortDir==='asc'?'&uarr;':'&darr;') : '&#8693;';
+    const align = c.type==='num'||c.type==='aging' ? 'text-align:right' : '';
+    return `<th data-key="${c.key}" class="${sorted?'sorted':''}" style="${align}"><span class="th-flex" style="${c.type==='num'||c.type==='aging'?'justify-content:flex-end':''}">${c.label}<span class="sort-ic">${arrow}</span></span></th>`;
+  }).join('');
+  th.querySelectorAll('th[data-key]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const key = el.dataset.key;
+      if(cfg.state.sortKey===key){cfg.state.sortDir = cfg.state.sortDir==='asc'?'desc':'asc';}
+      else {cfg.state.sortKey=key; cfg.state.sortDir='asc';}
+      cfg.state.page=1;
+      renderHead(tabKey); renderBody(tabKey);
+    });
+  });
+}
+
+function getFiltered(tabKey){
+  const cfg = configs[tabKey];
+  let rows = cfg.data.slice();
+  if(cfg.state.status==='pending') rows = rows.filter(r=>r.qtySisa>0);
+  if(cfg.state.status==='done') rows = rows.filter(r=>r.qtySisa===0);
+  rows.sort((a,b)=>{
+    let va=a[cfg.state.sortKey], vb=b[cfg.state.sortKey];
+    if(typeof va==='string') { va=va.toLowerCase(); vb=vb.toLowerCase(); }
+    if(va<vb) return cfg.state.sortDir==='asc'?-1:1;
+    if(va>vb) return cfg.state.sortDir==='asc'?1:-1;
+    return 0;
+  });
+  return rows;
+}
+
+function updatePillCounts(tabKey){
+  const cfg = configs[tabKey];
+  const all = cfg.data.length;
+  const pending = cfg.data.filter(r=>r.qtySisa>0).length;
+  const done = cfg.data.filter(r=>r.qtySisa===0).length;
+  document.getElementById(`cnt-${tabKey}-all`).textContent = all;
+  document.getElementById(`cnt-${tabKey}-pending`).textContent = pending;
+  document.getElementById(`cnt-${tabKey}-done`).textContent = done;
+}
+
+function renderBody(tabKey){
+  const cfg = configs[tabKey];
+  updatePillCounts(tabKey);
+  const rows = getFiltered(tabKey);
+  const pageSize = cfg.state.pageSize==='all' ? rows.length : cfg.state.pageSize;
+  const totalPages = pageSize>0 ? Math.max(1, Math.ceil(rows.length/pageSize)) : 1;
+  if(cfg.state.page>totalPages) cfg.state.page=totalPages;
+  const start = (cfg.state.page-1)*pageSize;
+  const pageRows = pageSize>0 ? rows.slice(start, start+pageSize) : rows;
+
+  const tbody = document.getElementById('tbody-'+tabKey);
+  if(pageRows.length===0){
+    tbody.innerHTML = `<tr><td colspan="${cfg.columns.length+1}"><div class="empty"><div class="ic">&#128203;</div>Tidak ada data outstanding untuk filter ini.</div></td></tr>`;
+  } else {
+    tbody.innerHTML = pageRows.map((r,i)=>{
+      const cells = cfg.columns.map(c=>{
+        if(c.type==='date') return `<td>${fmtDate(r[c.key])}</td>`;
+        if(c.type==='link') return `<td class="link-cell">${r[c.key]}</td>`;
+        if(c.type==='num') return `<td class="num">${r[c.key].toLocaleString('id-ID')}</td>`;
+        if(c.type==='aging') return `<td class="num">${agingBadge(r.day, r.qtySisa)}</td>`;
+        return `<td>${r[c.key]==='-'?'<span class="muted">-</span>':r[c.key]}</td>`;
+      }).join('');
+      return `<tr><td class="idx">${start+i+1}</td>${cells}</tr>`;
+    }).join('');
+  }
+  document.getElementById('count-'+tabKey).textContent = `${rows.length===0?0:start+1}-${Math.min(start+pageSize,rows.length)} dari ${rows.length} data`;
+  document.getElementById('page-'+tabKey).textContent = `${cfg.state.page} / ${totalPages}`;
+
+  const footBtns = document.querySelectorAll(`#panel-${tabKey} .pager button`);
+  footBtns[0].onclick = ()=>{ if(cfg.state.page>1){cfg.state.page--; renderBody(tabKey);} };
+  footBtns[1].onclick = ()=>{ if(cfg.state.page<totalPages){cfg.state.page++; renderBody(tabKey);} };
+}
+
+// page size selector
+['project','reguler'].forEach(tabKey=>{
+  const sel = document.getElementById('pageSize-'+tabKey);
+  sel.value = String(configs[tabKey].state.pageSize);
+  sel.addEventListener('change', ()=>{
+    const v = sel.value;
+    configs[tabKey].state.pageSize = v==='all' ? 'all' : parseInt(v,10);
+    configs[tabKey].state.page = 1;
+    renderBody(tabKey);
+  });
+});
+
+// status pills
+['project','reguler'].forEach(tabKey=>{
+  document.querySelectorAll(`#statusPills-${tabKey} .status-pill`).forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll(`#statusPills-${tabKey} .status-pill`).forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      configs[tabKey].state.status = btn.dataset.status;
+      configs[tabKey].state.page = 1;
+      renderBody(tabKey);
+    });
+  });
+});
+
+// tabs switch
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ---------- FILTER GLOBAL (multi-select dropdowns) ----------
+function uniqueValues(key){
+  const set = new Set();
+  [...projectData, ...regulerData].forEach(r=>{ if(r[key] && r[key]!=='-') set.add(r[key]); });
+  return Array.from(set).sort();
+}
+const filterDefs = [
+  {id:'fProject', label:'Project', options: uniqueValues('kode')},
+  {id:'fDepartment', label:'Department', options: uniqueValues('dept')},
+  {id:'fPic', label:'Keterangan', options: Array.from(new Set(regulerData.map(r=>r.pic))).sort()},
+  {id:'fProduct', label:'Product', options: uniqueValues('produk')},
+  {id:'fPr', label:'PR', options: Array.from(new Set([...projectData,...regulerData].map(r=>r.pr))).sort()},
+];
+const selectedFilters = {};
+
+filterDefs.forEach(def=>{
+  selectedFilters[def.id] = new Set();
+  const container = document.getElementById(def.id);
+  container.innerHTML = `
+    <label>${def.label}</label>
+    <div class="dropdown">
+      <button type="button" class="dd-trigger" id="${def.id}-trigger">
+        <span class="placeholder">Semua ${def.label}</span>
+      </button>
+      <div class="dd-panel" id="${def.id}-panel">
+        <input type="text" class="dd-search" placeholder="Cari ${def.label.toLowerCase()}...">
+        <div class="dd-opts"></div>
+      </div>
+    </div>`;
+  const opts = container.querySelector('.dd-opts');
+  def.options.forEach(opt=>{
+    const row = document.createElement('label');
+    row.className='dd-opt';
+    row.innerHTML = `<input type="checkbox" value="${opt}"><span>${opt}</span>`;
+    row.querySelector('input').addEventListener('change', e=>{
+      if(e.target.checked) selectedFilters[def.id].add(opt);
+      else selectedFilters[def.id].delete(opt);
+      updateTriggerLabel(def);
+    });
+    opts.appendChild(row);
+  });
+  const search = container.querySelector('.dd-search');
+  search.addEventListener('input', ()=>{
+    const q = search.value.toLowerCase();
+    opts.querySelectorAll('.dd-opt').forEach(r=>{
+      r.style.display = r.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
+    });
+  });
+  const trigger = container.querySelector('.dd-trigger');
+  const panel = container.querySelector('.dd-panel');
+  trigger.addEventListener('click', e=>{
+    e.stopPropagation();
+    document.querySelectorAll('.dd-panel.open').forEach(p=>{ if(p!==panel){p.classList.remove('open'); p.closest('.dropdown').querySelector('.dd-trigger').classList.remove('active');}});
+    panel.classList.toggle('open');
+    trigger.classList.toggle('active');
+  });
+});
+document.addEventListener('click', ()=>{
+  document.querySelectorAll('.dd-panel.open').forEach(p=>p.classList.remove('open'));
+  document.querySelectorAll('.dd-trigger.active').forEach(t=>t.classList.remove('active'));
+});
+function updateTriggerLabel(def){
+  const trigger = document.getElementById(def.id+'-trigger');
+  const n = selectedFilters[def.id].size;
+  trigger.innerHTML = n===0
+    ? `<span class="placeholder">Semua ${def.label}</span>`
+    : `<span>${Array.from(selectedFilters[def.id]).slice(0,1).join(', ')}${n>1?` +${n-1} lainnya`:''}</span><span class="count">${n}</span>`;
+}
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  filterDefs.forEach(def=>{
+    selectedFilters[def.id].clear();
+    document.querySelectorAll(`#${def.id} .dd-opt input`).forEach(i=>i.checked=false);
+    updateTriggerLabel(def);
+  });
+  document.getElementById('dateFrom').value='';
+  document.getElementById('dateTo').value='';
+});
+
+// show/hide filter panel
+const filterToggleBtn = document.getElementById('filterToggleBtn');
+const filterGrid = document.getElementById('filterGrid');
+const filterToggleLabel = document.getElementById('filterToggleLabel');
+filterToggleBtn.addEventListener('click', ()=>{
+  const collapsed = filterGrid.classList.toggle('collapsed');
+  filterToggleBtn.classList.toggle('collapsed', collapsed);
+  filterToggleBtn.setAttribute('aria-expanded', String(!collapsed));
+  filterToggleLabel.textContent = collapsed ? 'Tampilkan' : 'Sembunyikan';
+});
+
+// default periode: bulan berjalan
+(function setDefaultPeriod(){
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  document.getElementById('dateFrom').valueAsDate = first;
+  document.getElementById('dateTo').valueAsDate = now;
+})();
+
+// init
+['project','reguler'].forEach(tabKey=>{ renderHead(tabKey); renderBody(tabKey); });
+</script>
+</body>
+</html>

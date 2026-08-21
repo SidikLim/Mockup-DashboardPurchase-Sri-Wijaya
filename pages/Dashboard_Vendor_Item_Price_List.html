@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vendor Item Price List — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDF1F6;
+    --surface:#FFFFFF;
+    --surface-alt:#F5F7FB;
+    --border:#E1E7F0;
+    --border-soft:#EBEFF5;
+    --text-primary:#16202E;
+    --text-secondary:#5B6779;
+    --text-muted:#8B95A6;
+    --navy:#122A55;
+    --navy-soft:#17346B;
+    --blue-700:#1E4FBF;
+    --blue-600:#2F63E0;
+    --blue-500:#4C7EF2;
+    --blue-100:#E4ECFC;
+    --blue-50:#F2F5FE;
+    --success:#0E9C6F;
+    --success-bg:#E4F7EE;
+    --danger:#DB4B5C;
+    --danger-bg:#FCE9EB;
+    --radius:14px;
+    --shadow-sm:0 1px 2px rgba(20,34,64,.05);
+    --shadow-md:0 8px 24px -8px rgba(20,34,64,.14);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);font-family:'Inter',sans-serif;color:var(--text-primary);}
+  .app{max-width:1800px;margin:0 auto;padding:0 24px 64px;}
+
+  /* ---------- HERO / TOPBAR ---------- */
+  /* ---------- KPI CARDS ---------- */
+  .kpi-row{
+    position:relative;
+    margin-top:28px;
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+    z-index:2;
+  }
+  .kpi-card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    padding:18px 20px;
+    box-shadow:var(--shadow-md);
+    border:1px solid var(--border-soft);
+    position:relative;
+    overflow:hidden;
+  }
+  .kpi-card::after{
+    content:"";position:absolute;top:0;left:0;right:0;height:3px;
+    background:linear-gradient(90deg,var(--blue-500),var(--blue-700));
+  }
+  .kpi-top{display:flex;align-items:center;gap:10px;}
+  .kpi-icon{
+    width:36px;height:36px;border-radius:9px;background:var(--blue-50);
+    display:flex;align-items:center;justify-content:center;color:var(--blue-600);
+    flex-shrink:0;
+  }
+  .kpi-icon svg{width:18px;height:18px;}
+  .kpi-label{font-size:12.5px;color:var(--text-secondary);font-weight:500;flex:1;min-width:0;}
+  .kpi-trend{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px;display:flex;align-items:center;gap:3px;flex-shrink:0;margin-left:auto;}
+  .kpi-trend.up{color:var(--success);background:var(--success-bg);}
+  .kpi-trend.down{color:var(--danger);background:var(--danger-bg);}
+  .kpi-value{font-family:'Sora',sans-serif;font-size:26px;font-weight:700;margin-top:14px;color:var(--text-primary);}
+  .kpi-sub{font-size:11.5px;color:var(--text-muted);margin-top:3px;}
+
+  /* ---------- FILTER PANEL ---------- */
+  .panel{
+    background:var(--surface);
+    border-radius:var(--radius);
+    border:1px solid var(--border-soft);
+    box-shadow:var(--shadow-sm);
+    margin-top:22px;
+  }
+  .panel-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 22px;border-bottom:1px solid var(--border-soft);
+  }
+  .panel-title{display:flex;align-items:center;gap:10px;}
+  .panel-title-ic{
+    width:30px;height:30px;border-radius:8px;background:var(--blue-50);color:var(--blue-600);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .panel-title-ic svg{width:15px;height:15px;}
+  .panel-title h3{margin:0;font-size:14.5px;font-weight:700;font-family:'Sora',sans-serif;}
+  .panel-title span{display:block;font-size:12px;color:var(--text-muted);margin-top:1px;}
+  .btn-toggle-filter{
+    display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface-alt);
+    color:var(--text-secondary);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border-radius:8px;
+    padding:7px 12px;cursor:pointer;transition:.15s;flex-shrink:0;
+  }
+  .btn-toggle-filter:hover{border-color:var(--blue-500);color:var(--blue-700);background:var(--blue-50);}
+  .btn-toggle-filter svg{transition:.2s transform;flex-shrink:0;}
+  .btn-toggle-filter.collapsed svg{transform:rotate(-90deg);}
+  .filter-body{
+    display:grid;grid-template-rows:1fr;
+    transition:.22s grid-template-rows, .22s opacity;
+  }
+  .filter-body.collapsed{grid-template-rows:0fr;opacity:0;}
+  .filter-body-inner{min-height:0;}
+  .filter-body.collapsed .filter-body-inner{overflow:hidden;}
+  .filter-grid{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:16px;
+    padding:20px 22px;
+  }
+  .field label{
+    font-size:12px;font-weight:600;color:var(--text-secondary);
+    display:flex;align-items:center;gap:6px;margin-bottom:7px;
+  }
+  .field .checkline{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+  .field .checkline input{accent-color:var(--blue-600);width:14px;height:14px;}
+  .field .checkline label{margin:0;}
+  .control{
+    width:100%;
+    border:1px solid var(--border);
+    background:var(--surface-alt);
+    border-radius:9px;
+    padding:9px 12px;
+    font-size:13px;
+    font-family:'Inter',sans-serif;
+    color:var(--text-primary);
+    transition:.15s;
+  }
+  .control:focus{outline:none;border-color:var(--blue-500);background:#fff;box-shadow:0 0 0 3px var(--blue-100);}
+  .control:disabled{opacity:.55;cursor:not-allowed;}
+  .date-row{display:flex;align-items:center;gap:8px;}
+  .date-row span{color:var(--text-muted);font-size:12px;}
+
+  /* multi-select supplier */
+  .msel{position:relative;}
+  .msel-box{
+    display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+  }
+  .msel-box .txt{color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .msel-dd{
+    position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:30;
+    background:#fff;border:1px solid var(--border);border-radius:10px;
+    box-shadow:var(--shadow-md);padding:10px;display:none;max-height:260px;overflow:auto;
+  }
+  .msel-dd.open{display:block;}
+  .msel-search{margin-bottom:8px;}
+  .msel-item{display:flex;align-items:center;gap:9px;padding:7px 6px;border-radius:7px;font-size:13px;cursor:pointer;}
+  .msel-item:hover{background:var(--surface-alt);}
+  .msel-item input{accent-color:var(--blue-600);width:14px;height:14px;}
+  .msel-sep{height:1px;background:var(--border-soft);margin:6px 0;}
+  .msel-selectall{font-weight:600;color:var(--blue-700);}
+
+  .panel-header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .btn-reset-filter{
+    display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--surface-alt);
+    color:var(--text-secondary);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;border-radius:8px;
+    padding:7px 12px;cursor:pointer;transition:.15s;flex-shrink:0;
+  }
+  .btn-reset-filter:hover{border-color:var(--blue-500);color:var(--blue-700);background:var(--blue-50);}
+  .btn-reset-filter svg{width:13px;height:13px;flex-shrink:0;}
+  .btn{
+    border:none;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;font-size:13px;
+    padding:10px 18px;border-radius:9px;display:flex;align-items:center;gap:8px;transition:.15s;
+  }
+  .btn svg{width:15px;height:15px;}
+  .btn-primary{background:linear-gradient(135deg,var(--blue-500),var(--blue-700));color:#fff;box-shadow:0 6px 16px rgba(44,92,224,.28);}
+  .btn-primary:hover{filter:brightness(1.06);}
+  .btn-outline{background:#fff;border:1px solid var(--border);color:var(--text-secondary);}
+  .btn-outline:hover{background:var(--surface-alt);}
+  .export-group{display:flex;gap:10px;}
+  .btn-export{background:var(--surface-alt);border:1px solid var(--border);color:var(--text-primary);}
+  .btn-export:hover{background:var(--blue-50);border-color:var(--blue-100);color:var(--blue-700);}
+
+  /* ---------- TABLE CARD ---------- */
+  .table-card{
+    background:var(--surface);
+    border-radius:var(--radius);
+    border:1px solid var(--border-soft);
+    box-shadow:var(--shadow-sm);
+    margin-top:20px;
+  }
+  .table-toolbar{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:18px 22px;border-bottom:1px solid var(--border-soft);
+  }
+  .table-toolbar h3{margin:0;font-family:'Sora',sans-serif;font-size:15.5px;font-weight:700;}
+  .table-toolbar .count-badge{
+    font-size:11.5px;font-weight:600;background:var(--blue-50);color:var(--blue-700);
+    padding:3px 10px;border-radius:999px;margin-left:8px;
+  }
+  .search-wrap{position:relative;width:280px;max-width:100%;}
+  .search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-muted);}
+  .search-wrap input{width:100%;padding:9px 12px 9px 34px;border-radius:9px;border:1px solid var(--border);background:var(--surface-alt);font-size:13px;}
+  .search-wrap input:focus{outline:none;border-color:var(--blue-500);background:#fff;box-shadow:0 0 0 3px var(--blue-100);}
+
+  .table-scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;min-width:980px;}
+  thead th{
+    background:var(--surface-alt);
+    text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--text-secondary);font-weight:700;
+    padding:12px 16px;border-bottom:1px solid var(--border);
+    white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0;z-index:1;
+  }
+  thead th:hover{color:var(--blue-700);}
+  thead th .th-in{display:flex;align-items:center;gap:6px;}
+  thead th.c-center .th-in{justify-content:center;}
+  thead th.c-right .th-in{justify-content:flex-end;}
+  .sort-ic{width:11px;height:11px;opacity:.35;flex-shrink:0;}
+  thead th.active .sort-ic{opacity:1;color:var(--blue-600);}
+  tbody td{
+    padding:12px 16px;font-size:13px;color:var(--text-primary);
+    border-bottom:1px solid var(--border-soft);white-space:nowrap;
+  }
+  tbody td.c-center{text-align:center;}
+  tbody td.c-right{text-align:right;font-variant-numeric:tabular-nums;}
+  tbody tr:hover{background:var(--blue-50);}
+  .no-po-link{color:var(--blue-700);font-weight:600;cursor:pointer;}
+  .no-po-link:hover{text-decoration:underline;}
+  .tag{
+    display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600;
+    background:var(--blue-50);color:var(--blue-700);
+  }
+  .price-cell{font-weight:600;}
+  .row-idx{color:var(--text-muted);font-size:12.5px;}
+
+  .empty-state{padding:70px 20px;text-align:center;}
+  .empty-state .ic{
+    width:64px;height:64px;border-radius:16px;background:var(--blue-50);color:var(--blue-500);
+    display:flex;align-items:center;justify-content:center;margin:0 auto 18px;
+  }
+  .empty-state .ic svg{width:30px;height:30px;}
+  .empty-state h4{margin:0 0 6px;font-family:'Sora',sans-serif;font-size:16px;}
+  .empty-state p{margin:0;color:var(--text-secondary);font-size:13.5px;}
+
+  .table-footer{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;
+    padding:16px 22px;border-top:1px solid var(--border-soft);
+  }
+  .rows-select{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);}
+  .rows-select select{
+    border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;background:var(--surface-alt);
+  }
+  .entries-info{font-size:13px;color:var(--text-secondary);}
+  .pagination{display:flex;gap:6px;align-items:center;}
+  .page-btn{
+    width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:#fff;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-secondary);
+  }
+  .page-btn:hover:not(:disabled){background:var(--surface-alt);}
+  .page-btn.active{background:linear-gradient(135deg,var(--blue-500),var(--blue-700));color:#fff;border-color:transparent;}
+  .page-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .toast{
+    position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;
+    padding:13px 18px;border-radius:11px;font-size:13.5px;box-shadow:var(--shadow-md);
+    display:flex;align-items:center;gap:10px;transform:translateY(20px);opacity:0;
+    transition:.25s;pointer-events:none;z-index:100;
+  }
+  .toast.show{transform:translateY(0);opacity:1;}
+  .toast svg{width:16px;height:16px;color:#4ADE80;}
+
+  @media (max-width:1100px){
+    .kpi-row{grid-template-columns:repeat(2,1fr);}
+    .filter-grid{grid-template-columns:repeat(2,1fr);}
+  }
+  @media (max-width:640px){
+    .kpi-row{grid-template-columns:1fr;}
+    .filter-grid{grid-template-columns:1fr;}
+    .app{padding:0 14px 40px;}
+    .table-toolbar{flex-direction:column;align-items:flex-start;}
+    .search-wrap{width:100%;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <!-- FILTER PANEL -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <div class="panel-title-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+        </div>
+        <div>
+          <h3>Filter &amp; Pencarian</h3>
+          <span>Saring data transaksi PO sesuai kebutuhan analisis Anda</span>
+        </div>
+      </div>
+      <div class="panel-header-actions">
+        <button class="btn-reset-filter" id="btnResetFilter" onclick="resetFilters()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          Reset
+        </button>
+        <button class="btn-toggle-filter" id="btnToggleFilter" onclick="toggleFilterPanel()" aria-expanded="true">
+          <span id="toggleFilterLabel">Sembunyikan</span>
+          <svg id="toggleFilterIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-body" id="filterBody">
+    <div class="filter-body-inner">
+    <div class="filter-grid">
+      <div class="field">
+        <div class="checkline">
+          <input type="checkbox" id="dateToggle" onchange="toggleDate(); applyFilters();">
+          <label for="dateToggle">Periode Tanggal PO</label>
+        </div>
+        <div class="date-row">
+          <input type="date" class="control" id="dateFrom" disabled onchange="applyFilters()">
+          <span>—</span>
+          <input type="date" class="control" id="dateTo" disabled onchange="applyFilters()">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Kode Barang</label>
+        <select class="control" id="kodeBarang" onchange="syncFromKode(); applyFilters();">
+          <option value="">Semua Kode Barang</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Nama Barang</label>
+        <select class="control" id="namaBarang" onchange="syncFromNama(); applyFilters();">
+          <option value="">Semua Nama Barang</option>
+        </select>
+      </div>
+
+      <div class="field msel" id="supplierField">
+        <label>Supplier / Vendor</label>
+        <div class="control msel-box" onclick="toggleMsel()">
+          <span class="txt" id="supplierLabel">All Suppliers Selected</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="msel-dd" id="supplierDD">
+          <input class="control msel-search" placeholder="Cari supplier..." id="supplierSearch" oninput="renderSupplierList()">
+          <div class="msel-item msel-selectall" onclick="toggleSelectAllSupplier(event)">
+            <input type="checkbox" id="supplierSelectAll"> <span>Select All</span>
+          </div>
+          <div class="msel-sep"></div>
+          <div id="supplierList"></div>
+        </div>
+      </div>
+    </div>
+
+    </div>
+    </div>
+  </div>
+
+  <!-- TABLE CARD -->
+  <div class="table-card">
+    <div class="table-toolbar">
+      <div>
+        <h3 style="display:inline;">Transaksi PO — Item Price List</h3>
+        <span class="count-badge" id="resultBadge">0 records</span>
+      </div>
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="globalSearch" placeholder="Cari No. PO, Supplier, Kode / Nama Barang..." oninput="onSearch()">
+      </div>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr id="theadRow"></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div id="emptyState" class="empty-state" style="display:none;">
+      <div class="ic">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/><path d="M8 11h6"/></svg>
+      </div>
+      <h4>Data tidak ditemukan</h4>
+      <p>Coba ubah kombinasi filter atau kata kunci pencarian Anda.</p>
+    </div>
+
+    <div class="table-footer">
+      <div class="rows-select">
+        Tampilkan
+        <select id="rowsPerPage" onchange="onRowsChange()">
+          <option value="10" selected>10</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="500">500</option>
+          <option value="1000">1000</option>
+          <option value="all">All</option>
+        </select>
+        entries
+      </div>
+      <div class="entries-info" id="entriesInfo">Showing 0 to 0 of 0 entries</div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============== SAMPLE DATA GENERATION ============== */
+const SUPPLIERS = [
+  "ADIDAYA KALIMANTAN PRATAMA","AGAVE PRIMATAMA","CASH PURCHASE SAMARINDA","CV WIJAYA MAKMUR SENTOSA",
+  "PT GRAHA MITRA PERSADA","PT HARTORA KANONDATI","PT. LANCAR ANUGERAH SEJAHTERA","PT. RUKUN SEJAHTERA TEKNIK",
+  "PT. SDA GLOBAL","TK. WENGKIE","PT MITRA BAJA SEJATI","CV SUMBER TEKNIK MANDIRI","PT INDO PERKASA ENGINEERING"
+];
+const ITEMS = [
+  ["CON-00086","INSERT - KANAN [12MM]","PCS",109500],
+  ["TOO-00697","ENDMILL LONG [10MMX95MM]","PCS",375000],
+  ["60301010","PEMBAYARAN SEWA RUMAH UNTUK MESS KARYAWAN","UNIT",2111111],
+  ["60301150","PALET KAYU [110CMX110CM]","PCS",50000],
+  ["RAW-00560","ROUND BAR - AS NYLON [70MM 5]","BTG",28000],
+  ["CON-00513","CAT - TOP COLOR - SIGNAL RED","KLG",135000],
+  ["ATK-00008","CLEAR SHEET PROTECTOR [A4-100 LBR]","PACK",65000],
+  ["ATK-00047","ISI STAPLER - KECIL [NO.10-1M]","PCS",2500],
+  ["ATK-00087","TINTA EPSON - HITAM [003]","PCS",96000],
+  ["ATK-00004","KERTAS HVS COPY LASER [A4]","RIM",43500],
+  ["60101060","PLASTIK KLIP [8X12]","PACK",6350],
+  ["60101061","PLASTIK KLIP [7X10]","PACK",4700],
+  ["RAW-00428","PLATE SS400 [16MM 1200X2400]","LBR",5405000],
+  ["TOO-00699","WATERPASS BULAT - ROUND BUBBLE","PCS",62000],
+  ["NIP-00039","DN 10MJ-08MJ","PCS",17000],
+  ["CON-00024","KAMPAS REM [5X12X125MM]","PCS",1300],
+  ["TOO-00512","MATA BOR HSS [10MM]","PCS",22500],
+  ["RAW-00291","BESI SIKU [40X40X4MM 6M]","BTG",97000],
+  ["CON-00201","LAMPU LED PHILIPS [18W]","PCS",45000],
+  ["ATK-00112","MAP PLASTIK SNELHECTER [F4]","PCS",3200]
+];
+const UOM_SET = ["PCS","UNIT","BTG","KLG","PACK","RIM","LBR"];
+
+function pad(n){return n.toString().padStart(2,'0');}
+function randDate(){
+  const day = 1 + Math.floor(Math.random()*30);
+  return `2026-06-${pad(day)}`;
+}
+function fmtDateID(iso){
+  const [y,m,d] = iso.split('-');
+  const months=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  return `${d} ${months[parseInt(m)-1]} ${y}`;
+}
+
+const DATA = [];
+let seq = 30;
+for(let i=0;i<130;i++){
+  const item = ITEMS[Math.floor(Math.random()*ITEMS.length)];
+  const supplier = SUPPLIERS[Math.floor(Math.random()*SUPPLIERS.length)];
+  const qty = [1,2,4,5,6,10,12,20,60,75][Math.floor(Math.random()*10)];
+  seq++;
+  const noPoPrefix = Math.random()>0.5 ? `PO2606${(1000+seq).toString().slice(-4)}/STU/${["MCN","PST","AU","H","TO"][Math.floor(Math.random()*5)]}` : `PO335/06/26/${(40+i).toString().padStart(4,'0')}`;
+  DATA.push({
+    tglPo: randDate(),
+    noPo: noPoPrefix,
+    supplier,
+    kodeBarang: item[0],
+    namaBarang: item[1],
+    qty,
+    uom: item[2],
+    harga: item[3]
+  });
+}
+DATA.sort((a,b)=> a.tglPo < b.tglPo ? 1 : -1);
+
+/* ============== STATE ============== */
+let state = {
+  sortKey: 'tglPo',
+  sortDir: 'desc',
+  page: 1,
+  rowsPerPage: 10,
+  search: '',
+  filters: { dateOn:false, from:null, to:null, kode:'', nama:'', suppliers: new Set() }
+};
+
+const COLUMNS = [
+  {key:'tglPo', label:'Tgl. PO', align:'center', width:'110px'},
+  {key:'noPo', label:'No. PO', align:'left'},
+  {key:'supplier', label:'Supplier', align:'left'},
+  {key:'kodeBarang', label:'Kode Barang', align:'center'},
+  {key:'namaBarang', label:'Nama Barang', align:'left'},
+  {key:'qty', label:'Qty', align:'right'},
+  {key:'uom', label:'UOM', align:'center'},
+  {key:'harga', label:'Harga Per Item', align:'right'},
+  {key:'total', label:'Total Harga', align:'right'},
+];
+
+/* ============== INIT FILTER OPTIONS ============== */
+function initFilterOptions(){
+  const kodeSel = document.getElementById('kodeBarang');
+  const namaSel = document.getElementById('namaBarang');
+  ITEMS.forEach(it=>{
+    const o1 = document.createElement('option'); o1.value = it[0]; o1.textContent = `${it[0]}`; kodeSel.appendChild(o1);
+    const o2 = document.createElement('option'); o2.value = it[0]; o2.textContent = it[1]; namaSel.appendChild(o2);
+  });
+  state.filters.suppliers = new Set(SUPPLIERS);
+  renderSupplierList();
+  updateSupplierLabel();
+}
+function syncFromKode(){
+  const v = document.getElementById('kodeBarang').value;
+  document.getElementById('namaBarang').value = v || '';
+}
+function syncFromNama(){
+  const v = document.getElementById('namaBarang').value;
+  document.getElementById('kodeBarang').value = v || '';
+}
+
+/* ============== MULTI-SELECT SUPPLIER ============== */
+function toggleMsel(){
+  document.getElementById('supplierDD').classList.toggle('open');
+}
+document.addEventListener('click', (e)=>{
+  const field = document.getElementById('supplierField');
+  if(!field.contains(e.target)) document.getElementById('supplierDD').classList.remove('open');
+});
+function renderSupplierList(){
+  const q = (document.getElementById('supplierSearch').value || '').toLowerCase();
+  const list = document.getElementById('supplierList');
+  list.innerHTML = '';
+  SUPPLIERS.filter(s=>s.toLowerCase().includes(q)).forEach(s=>{
+    const row = document.createElement('div');
+    row.className = 'msel-item';
+    const checked = state.filters.suppliers.has(s) ? 'checked' : '';
+    row.innerHTML = `<input type="checkbox" ${checked} data-s="${s}"><span>${s}</span>`;
+    row.onclick = (e)=>{
+      if(e.target.tagName !== 'INPUT'){
+        const cb = row.querySelector('input'); cb.checked = !cb.checked;
+      }
+      const s2 = row.querySelector('input').getAttribute('data-s');
+      if(row.querySelector('input').checked) state.filters.suppliers.add(s2);
+      else state.filters.suppliers.delete(s2);
+      updateSupplierLabel();
+      syncSelectAllCheckbox();
+      state.page = 1;
+      render();
+    };
+    list.appendChild(row);
+  });
+  syncSelectAllCheckbox();
+}
+function syncSelectAllCheckbox(){
+  document.getElementById('supplierSelectAll').checked = state.filters.suppliers.size === SUPPLIERS.length;
+}
+function toggleSelectAllSupplier(e){
+  e.stopPropagation();
+  const cb = document.getElementById('supplierSelectAll');
+  cb.checked = !cb.checked;
+  if(cb.checked){ state.filters.suppliers = new Set(SUPPLIERS); }
+  else { state.filters.suppliers = new Set(); }
+  renderSupplierList();
+  updateSupplierLabel();
+  state.page = 1;
+  render();
+}
+function updateSupplierLabel(){
+  const n = state.filters.suppliers.size;
+  const label = document.getElementById('supplierLabel');
+  if(n === SUPPLIERS.length) label.textContent = 'All Suppliers Selected';
+  else if(n === 0) label.textContent = 'No Supplier Selected';
+  else label.textContent = `${n} Supplier Dipilih`;
+}
+
+/* ============== DATE TOGGLE ============== */
+function toggleDate(){
+  const on = document.getElementById('dateToggle').checked;
+  document.getElementById('dateFrom').disabled = !on;
+  document.getElementById('dateTo').disabled = !on;
+}
+
+/* ============== FILTER / RESET ============== */
+function applyFilters(){
+  state.filters.dateOn = document.getElementById('dateToggle').checked;
+  state.filters.from = document.getElementById('dateFrom').value || null;
+  state.filters.to = document.getElementById('dateTo').value || null;
+  state.filters.kode = document.getElementById('kodeBarang').value;
+  state.filters.nama = document.getElementById('namaBarang').value;
+  state.page = 1;
+  render();
+}
+function resetFilters(){
+  document.getElementById('dateToggle').checked = false;
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value = '';
+  document.getElementById('dateFrom').disabled = true;
+  document.getElementById('dateTo').disabled = true;
+  document.getElementById('kodeBarang').value = '';
+  document.getElementById('namaBarang').value = '';
+  document.getElementById('globalSearch').value = '';
+  state.filters = { dateOn:false, from:null, to:null, kode:'', nama:'', suppliers: new Set(SUPPLIERS) };
+  state.search = '';
+  state.page = 1;
+  renderSupplierList();
+  updateSupplierLabel();
+  render();
+  showToast('Filter direset ke kondisi awal');
+}
+function onSearch(){
+  state.search = document.getElementById('globalSearch').value.trim().toLowerCase();
+  state.page = 1;
+  render();
+}
+function toggleFilterPanel(){
+  const body = document.getElementById('filterBody');
+  const btn = document.getElementById('btnToggleFilter');
+  const label = document.getElementById('toggleFilterLabel');
+  const collapsed = body.classList.toggle('collapsed');
+  btn.classList.toggle('collapsed', collapsed);
+  btn.setAttribute('aria-expanded', String(!collapsed));
+  label.textContent = collapsed ? 'Tampilkan' : 'Sembunyikan';
+}
+function exportData(type){
+  showToast(`Mengunduh ${filteredData().length} baris data ke format ${type}...`);
+}
+
+/* ============== DATA PROCESSING ============== */
+function filteredData(){
+  let rows = DATA.slice();
+  const f = state.filters;
+  if(f.dateOn && f.from) rows = rows.filter(r => r.tglPo >= f.from);
+  if(f.dateOn && f.to) rows = rows.filter(r => r.tglPo <= f.to);
+  if(f.kode) rows = rows.filter(r => r.kodeBarang === f.kode);
+  if(f.nama) rows = rows.filter(r => r.kodeBarang === f.nama);
+  if(f.suppliers.size < SUPPLIERS.length) rows = rows.filter(r => f.suppliers.has(r.supplier));
+  if(state.search){
+    const q = state.search;
+    rows = rows.filter(r =>
+      r.noPo.toLowerCase().includes(q) ||
+      r.supplier.toLowerCase().includes(q) ||
+      r.kodeBarang.toLowerCase().includes(q) ||
+      r.namaBarang.toLowerCase().includes(q)
+    );
+  }
+  rows.sort((a,b)=>{
+    let va, vb;
+    if(state.sortKey === 'total'){ va = a.qty*a.harga; vb = b.qty*b.harga; }
+    else { va = a[state.sortKey]; vb = b[state.sortKey]; }
+    if(typeof va === 'string'){ va = va.toLowerCase(); vb = vb.toLowerCase(); }
+    if(va < vb) return state.sortDir === 'asc' ? -1 : 1;
+    if(va > vb) return state.sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+  return rows;
+}
+
+function sortBy(key){
+  if(state.sortKey === key){ state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc'; }
+  else { state.sortKey = key; state.sortDir = 'asc'; }
+  render();
+}
+function onRowsChange(){
+  const v = document.getElementById('rowsPerPage').value;
+  state.rowsPerPage = v === 'all' ? 'all' : parseInt(v);
+  state.page = 1;
+  render();
+}
+function goPage(p){ state.page = p; render(); }
+
+/* ============== RENDER ============== */
+function idr(n){ return 'Rp' + Math.round(n).toLocaleString('id-ID'); }
+
+function renderHead(){
+  const tr = document.getElementById('theadRow');
+  tr.innerHTML = '';
+  COLUMNS.forEach(c=>{
+    const th = document.createElement('th');
+    th.className = c.align === 'center' ? 'c-center' : c.align === 'right' ? 'c-right' : '';
+    if(c.key === state.sortKey) th.classList.add('active');
+    const arrowUp = `<svg class="sort-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l7 8H5z"/></svg>`;
+    const arrowDown = `<svg class="sort-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 19l-7-8h14z"/></svg>`;
+    const isActive = c.key === state.sortKey;
+    const arrow = isActive ? (state.sortDir === 'asc' ? arrowUp : arrowDown) : `<svg class="sort-ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5l7 8H5z"/></svg>`;
+    th.innerHTML = `<div class="th-in"><span>${c.label}</span>${arrow}</div>`;
+    th.onclick = ()=> sortBy(c.key);
+    tr.appendChild(th);
+  });
+}
+
+function render(){
+  renderHead();
+  const rows = filteredData();
+  const total = rows.length;
+  const perPage = state.rowsPerPage === 'all' ? Math.max(total,1) : state.rowsPerPage;
+  const totalPages = Math.max(1, Math.ceil(total/perPage));
+  if(state.page > totalPages) state.page = totalPages;
+  const startIdx = (state.page-1)*perPage;
+  const pageRows = rows.slice(startIdx, startIdx+perPage);
+
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('emptyState');
+  tbody.innerHTML = '';
+
+  if(pageRows.length === 0){
+    empty.style.display = 'block';
+  } else {
+    empty.style.display = 'none';
+    pageRows.forEach((r)=>{
+      const tr = document.createElement('tr');
+      const totalHarga = r.qty * r.harga;
+      tr.innerHTML = `
+        <td class="c-center">${fmtDateID(r.tglPo)}</td>
+        <td><span class="no-po-link">${r.noPo}</span></td>
+        <td>${r.supplier}</td>
+        <td class="c-center"><span class="tag">${r.kodeBarang}</span></td>
+        <td>${r.namaBarang}</td>
+        <td class="c-right">${r.qty}</td>
+        <td class="c-center">${r.uom}</td>
+        <td class="c-right price-cell">${idr(r.harga)}</td>
+        <td class="c-right price-cell">${idr(totalHarga)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('resultBadge').textContent = `${total.toLocaleString('id-ID')} records`;
+  const showFrom = total === 0 ? 0 : startIdx+1;
+  const showTo = Math.min(startIdx+perPage, total);
+  document.getElementById('entriesInfo').textContent = `Showing ${showFrom} to ${showTo} of ${total.toLocaleString('id-ID')} entries`;
+
+  renderPagination(totalPages);
+  renderKPI(rows);
+}
+
+function renderPagination(totalPages){
+  const wrap = document.getElementById('pagination');
+  wrap.innerHTML = '';
+  const mkBtn = (label, page, opts={}) => {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (opts.active ? ' active' : '');
+    b.textContent = label;
+    b.disabled = !!opts.disabled;
+    b.onclick = ()=> goPage(page);
+    return b;
+  };
+  wrap.appendChild(mkBtn('‹', state.page-1, {disabled: state.page<=1}));
+  let pages = [];
+  const cur = state.page;
+  for(let p=1;p<=totalPages;p++){
+    if(p===1 || p===totalPages || (p>=cur-1 && p<=cur+1)) pages.push(p);
+  }
+  let prev = 0;
+  pages.forEach(p=>{
+    if(prev && p - prev > 1){
+      const dots = document.createElement('span');
+      dots.textContent = '…';
+      dots.style.color = 'var(--text-muted)';
+      dots.style.padding = '0 4px';
+      wrap.appendChild(dots);
+    }
+    wrap.appendChild(mkBtn(p, p, {active: p===cur}));
+    prev = p;
+  });
+  wrap.appendChild(mkBtn('›', state.page+1, {disabled: state.page>=totalPages}));
+}
+
+function renderKPI(rows){
+  const totalPO = new Set(rows.map(r=>r.noPo)).size;
+  const totalVendor = new Set(rows.map(r=>r.supplier)).size;
+  const totalSKU = new Set(rows.map(r=>r.kodeBarang)).size;
+  const avgHarga = rows.length ? rows.reduce((s,r)=>s+r.harga,0)/rows.length : 0;
+
+  const kpis = [
+    {label:'Total PO Aktif', value: totalPO.toLocaleString('id-ID'), sub:'Dokumen PO (exclude Manual Closed)', trend:'up', trendVal:'Live', icon:`<path d="M9 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2z"/><path d="M19 3h-4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"/>`},
+    {label:'Total Vendor / Supplier', value: totalVendor.toLocaleString('id-ID'), sub:'Vendor unik pada hasil filter', icon:`<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`},
+    {label:'Total Variasi Barang', value: totalSKU.toLocaleString('id-ID'), sub:'SKU / item unik terdaftar', icon:`<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05"/><path d="M12 22.08V12"/>`},
+    {label:'Rata-Rata Harga Item', value: idr(avgHarga), sub:'Rata-rata unit price tampil', icon:`<path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>`},
+  ];
+
+  const row = document.getElementById('kpiRow');
+  row.innerHTML = kpis.map(k=>`
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${k.icon}</svg></div>
+        <div class="kpi-label">${k.label}</div>
+        ${k.trendVal ? `<div class="kpi-trend up">${k.trendVal}</div>` : ''}
+      </div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>
+  `).join('');
+}
+
+/* ============== TOAST ============== */
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg><span>${msg}</span>`;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+/* ============== BOOT ============== */
+initFilterOptions();
+render();
+</script>
+</body>
+</html>

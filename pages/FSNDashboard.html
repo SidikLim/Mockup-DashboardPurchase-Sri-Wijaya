@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard Analisis FSN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDF1F6;
+    --card:#FFFFFF;
+    --border:#E1E7F0;
+    --slate-800:#16202E;
+    --slate-700:#232D3D;
+    --slate-600:#5B6779;
+    --slate-500:#5B6779;
+    --slate-400:#8B95A6;
+    --slate-300:#C7D0DC;
+    --slate-50:#F5F7FB;
+    --blue-700:#1E4FBF;
+    --blue-600:#2F63E0;
+    --blue-500:#4C7EF2;
+    --blue-400:#6B98F5;
+    --blue-100:#E4ECFC;
+    --blue-50:#F2F5FE;
+    --amber-50:#FBEBD7;
+    --amber-600:#C7791F;
+    --amber-200:#F0CB9C;
+    --rose-600:#DB4B5C;
+    --rose-500:#E2707D;
+    --rose-200:#F6C7CD;
+    --rose-50:#FCE9EB;
+    --green-50:#E1F5E7;
+    --green-600:#1C8A50;
+    --green-200:#BFE6CC;
+    --gold-bg:#FFD966;
+    --gold-border:#E8B923;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(20,34,64,.04), 0 8px 24px -12px rgba(20,34,64,.10);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    color:var(--slate-700);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1800px;margin:0 auto;padding:24px 20px 40px;}
+
+  /* Filter bar */
+  .filter-bar{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    box-shadow:var(--shadow);
+    padding:10px 12px;
+    margin-bottom:18px;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px;
+  }
+  .filter-label{
+    display:flex;align-items:center;gap:6px;color:var(--slate-400);
+    font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    padding-right:2px; flex-shrink:0;
+  }
+  .search-box{position:relative;flex:1;min-width:170px;max-width:320px;}
+  .search-box svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--slate-400);}
+  .search-box input{
+    width:100%;padding:7px 10px 7px 30px;font-size:13.5px;border-radius:9px;
+    border:1px solid var(--border);background:var(--slate-50);outline:none;transition:.15s;
+  }
+  .search-box input:focus{border-color:var(--blue-400);background:#fff;box-shadow:0 0 0 3px var(--blue-100);}
+  select.filter-select{
+    padding:7px 10px;font-size:13.5px;border-radius:9px;border:1px solid var(--border);
+    background:var(--slate-50);color:var(--slate-600);outline:none;cursor:pointer;
+  }
+  select.filter-select:focus{border-color:var(--blue-400);box-shadow:0 0 0 3px var(--blue-100);}
+
+  /* Summary cards */
+  .cards{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+  .card{
+    display:inline-flex;align-items:center;gap:9px;
+    background:var(--card);border:1px solid var(--border);border-radius:12px;
+    box-shadow:var(--shadow);padding:8px 14px 8px 10px;width:fit-content;
+  }
+  .card .icon{
+    width:28px;height:28px;border-radius:8px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;color:#fff;
+  }
+  .card .label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--slate-400);white-space:nowrap;line-height:1.2;}
+  .card .value{font-size:14px;font-weight:800;color:var(--slate-800);white-space:nowrap;line-height:1.3;margin-top:2px;}
+
+  /* Table container */
+  .table-card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;}
+  .table-scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;min-width:1350px;font-size:13px;}
+  thead th{color:#fff;font-weight:600;padding:9px 6px;}
+  thead tr:first-child th{background:var(--slate-800);text-align:center;white-space:nowrap;}
+  thead tr:first-child th.sticky-col{text-align:left;background:var(--slate-800);}
+  thead tr:nth-child(2) th{
+    font-size:11px;font-weight:500;text-align:right;cursor:pointer;user-select:none;
+    white-space:normal;line-height:1.3;
+  }
+  thead tr:nth-child(2) th:hover{filter:brightness(1.1);}
+  th.group-fast{background:var(--blue-600);}
+  th.group-slow{background:var(--slate-500);}
+  th.group-dead{background:var(--slate-700);}
+  .th-inner{display:inline-flex;align-items:center;gap:4px;justify-content:flex-end;width:100%;}
+  .sort-icon{opacity:.55;}
+  th.sticky-col, td.sticky-col{
+    position:sticky;background:#fff;z-index:2;
+  }
+  th.sticky-col.col0, td.sticky-col.col0{left:0;min-width:148px;}
+  th.sticky-col.col1, td.sticky-col.col1{left:148px;min-width:100px;}
+  th.sticky-col.col2, td.sticky-col.col2{left:248px;min-width:200px;}
+  th.sticky-col{z-index:5;}
+
+  tbody tr{cursor:pointer;transition:background .12s;}
+  tbody tr:nth-child(even){background:var(--slate-50);}
+  tbody tr:hover{background:var(--blue-50) !important;}
+  tbody tr:hover td.sticky-col{background:var(--blue-50) !important;}
+  td{padding:8px 7px;white-space:nowrap;color:var(--slate-600);}
+  td.code{color:var(--blue-700);font-weight:600;}
+  td.name{color:var(--slate-700);}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  td.num.money{font-weight:600;color:var(--slate-700);}
+  td.num.money.dead{color:var(--rose-600);}
+  td.zero{color:var(--slate-300);}
+  .badge{
+    display:inline-block;margin-left:7px;padding:1px 7px;border-radius:99px;
+    font-size:10px;font-weight:700;
+  }
+  .badge.fast{background:var(--blue-50);color:var(--blue-700);border:1px solid var(--blue-100);}
+  .badge.slow{background:var(--amber-50);color:var(--amber-600);border:1px solid var(--amber-200);}
+  .badge.dead{background:var(--rose-50);color:var(--rose-600);border:1px solid var(--rose-200);}
+
+  /* Rekap By Gudang */
+  .recap-wrap{margin-bottom:18px;}
+  .recap-title{
+    font-family:'Sora',sans-serif;font-size:14.5px;font-weight:700;color:var(--slate-800);
+    padding:14px 18px 10px;
+  }
+  table.recap-table{width:100%;border-collapse:collapse;min-width:1100px;font-size:12.5px;}
+  table.recap-table thead th{
+    padding:10px 12px;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.02em;
+    text-align:right;border:1px solid var(--border);white-space:normal;line-height:1.35;
+  }
+  table.recap-table thead th.recap-th-gudang{text-align:left;background:var(--slate-50);color:var(--slate-700);}
+  table.recap-table thead th.recap-th-fast{background:var(--green-50);color:var(--green-600);}
+  table.recap-table thead th.recap-th-slow{background:var(--amber-50);color:var(--amber-600);}
+  table.recap-table thead th.recap-th-dead{background:var(--rose-50);color:var(--rose-600);}
+  table.recap-table tbody td{
+    padding:9px 12px;border:1px solid var(--border);text-align:right;
+    font-variant-numeric:tabular-nums;color:var(--slate-600);
+  }
+  table.recap-table tbody td.recap-gudang{
+    text-align:left;font-weight:700;background:var(--blue-50);color:var(--blue-700);
+  }
+  table.recap-table tbody tr:nth-child(even) td:not(.recap-gudang){background:var(--slate-50);}
+
+  .empty-row td{text-align:center;padding:36px;color:var(--slate-400);font-size:13.5px;}
+
+  /* Pagination */
+  .pagination{
+    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+    padding:12px 16px;border-top:1px solid var(--slate-50);
+  }
+  .pagination .info{font-size:12px;color:var(--slate-500);}
+  .pagination .info b{color:var(--slate-700);}
+  .pager{display:flex;align-items:center;gap:5px;}
+  .pager button{
+    width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:#fff;
+    color:var(--slate-500);display:flex;align-items:center;justify-content:center;cursor:pointer;
+  }
+  .pager button:disabled{opacity:.35;cursor:default;}
+  .pager button:hover:not(:disabled){background:var(--slate-50);}
+  .pager .pg-count{font-size:12px;color:var(--slate-600);padding:5px 12px;border-radius:8px;background:var(--slate-50);border:1px solid var(--border);}
+
+  .hint{text-align:center;font-size:11px;color:var(--slate-400);margin-top:14px;}
+
+  /* Modal */
+  .overlay{
+    display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(2px);
+    align-items:center;justify-content:center;padding:16px;z-index:50;
+  }
+  .overlay.open{display:flex;}
+  .modal{
+    background:#fff;border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.25);
+    width:100%;max-width:620px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;
+  }
+  .modal-head{background:linear-gradient(90deg,var(--blue-700),var(--blue-600));padding:16px 20px;color:#fff;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;}
+  .modal-head .kode{font-size:12px;color:var(--blue-100);}
+  .modal-head h3{font-size:15px;margin:3px 0 0;display:flex;align-items:center;gap:7px;}
+  .modal-head .nama{font-size:13.5px;color:var(--blue-100);margin-top:5px;}
+  .modal-head button{background:none;border:none;color:var(--blue-100);cursor:pointer;padding:2px;}
+  .modal-head button:hover{color:#fff;}
+  .modal-tags{display:flex;gap:14px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid var(--slate-50);flex-shrink:0;}
+  .modal-tags span{font-size:11.5px;color:var(--slate-500);display:flex;align-items:center;gap:4px;}
+  .modal-body{overflow-y:auto;padding:16px 20px;}
+  .timeline{list-style:none;margin:0;padding:0 0 0 20px;border-left:2px solid var(--slate-50);}
+  .timeline li{position:relative;margin-bottom:18px;}
+  .timeline li:last-child{margin-bottom:0;}
+  .timeline .dot{position:absolute;left:-25px;top:2px;width:14px;height:14px;border-radius:99px;box-shadow:0 0 0 4px #fff;}
+  .timeline .dot.in{background:var(--blue-500);}
+  .timeline .dot.out{background:var(--slate-400);}
+  .timeline .row1{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+  .timeline .ttl{font-size:13.5px;font-weight:700;color:var(--slate-700);}
+  .timeline .date{font-size:11.5px;color:var(--slate-400);}
+  .timeline .batch{font-size:11.5px;color:var(--slate-400);margin-top:2px;}
+  .timeline .figs{display:flex;gap:16px;margin-top:4px;font-size:13px;color:var(--slate-600);}
+  .timeline .figs b{font-variant-numeric:tabular-nums;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <div class="filter-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Filter
+      </div>
+      <div class="search-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="searchInput" type="text" placeholder="Cari Kode / Nama Item..." />
+      </div>
+      <select id="categorySelect" class="filter-select"></select>
+      <select id="warehouseSelect" class="filter-select"></select>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="cards" id="summaryCards"></div>
+
+    <!-- Rekap By Gudang -->
+    <div class="table-card recap-wrap">
+      <div class="recap-title">Rekap By Gudang</div>
+      <div class="table-scroll">
+        <table class="recap-table">
+          <thead>
+            <tr>
+              <th class="recap-th-gudang">Gudang</th>
+              <th class="recap-th-fast">Grand Total Fast<br>(HPP Keluar) &lt;1 Bln</th>
+              <th class="recap-th-fast">Grand Total Fast<br>(HPP Mengendap) &lt;1 Bln</th>
+              <th class="recap-th-slow">Grand Total Slow<br>(HPP Keluar) &gt;1-5 Bln</th>
+              <th class="recap-th-slow">Grand Total Slow<br>(HPP Mengendap) &gt;1-5 Bln</th>
+              <th class="recap-th-dead">Grand Total Dead<br>(HPP Keluar) &gt;5 Bln</th>
+              <th class="recap-th-dead">Grand Total Dead<br>(HPP Mengendap) &gt;5 Bln</th>
+            </tr>
+          </thead>
+          <tbody id="recapBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th rowspan="2" class="sticky-col col0">Gudang</th>
+              <th rowspan="2" class="sticky-col col1">Kode Item</th>
+              <th rowspan="2" class="sticky-col col2">Nama Item</th>
+              <th colspan="4" class="group-fast">Fast Moving</th>
+              <th colspan="4" class="group-slow">Slow Moving</th>
+              <th colspan="4" class="group-dead">Dead Stock</th>
+            </tr>
+            <tr id="subHeaderRow"></tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="pagination">
+        <p class="info" id="pageInfo"></p>
+        <div class="pager">
+          <label for="pageSizeSelect" style="font-size:12px;color:var(--slate-500);">Tampilkan</label>
+          <select id="pageSizeSelect" class="filter-select">
+            <option value="10" selected>10</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+            <option value="all">All</option>
+          </select>
+          <button id="prevBtn" aria-label="Sebelumnya">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <span class="pg-count" id="pgCount"></span>
+          <button id="nextBtn" aria-label="Berikutnya">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <p class="hint">Klik salah satu baris data untuk melihat detail riwayat transaksi (Card Stock History)</p>
+  </div>
+
+  <!-- Drill-down Modal -->
+  <div class="overlay" id="overlay">
+    <div class="modal" id="modalBox">
+      <div class="modal-head">
+        <div>
+          <div class="kode" id="modalKode"></div>
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Riwayat Transaksi (Card Stock History)
+          </h3>
+          <div class="nama" id="modalNama"></div>
+        </div>
+        <button id="closeModal" aria-label="Tutup">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-tags" id="modalTags"></div>
+      <div class="modal-body">
+        <ol class="timeline" id="modalTimeline"></ol>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ------------------------------------------------------------------ */
+/* Dummy dataset generator — mimics APD (safety equipment) stock items */
+/* ------------------------------------------------------------------ */
+const ITEM_NAMES = [
+  "SARUNG TANGAN LAS","KERUDUNG - TUDUNG LAS","CAP LAS [HELM LAS]",
+  "SERAGAM OFFICE BOY","PADLOCK - GEMBOK PANJANG","PADLOCK - GEMBOK PENDEK",
+  "PADLOCK - GEMBOK KUNCI","WELDING JACKET [M]","WELDING JACKET [L]",
+  "KOKEN - MASKER","SAFETY SHOES PENDEK","NAME PLATE [225X174]",
+  "KACA BENING [10.7X5]","KACA MIKA [10.7X5]","KACA HITAM [NO.10]",
+  "KACA HITAM [NO.11]","KACA HITAM [NO.12]","KOKEN - DUST FILTER",
+  "KOKEN - SPONGE EGG","EARPLUG BUSA","SAFETY GLASSES BENING",
+  "SAFETY HELMET KUNING","ROMPI SAFETY ORANGE","MASKER N95",
+  "SARUNG TANGAN KATUN","SEPATU SAFETY BOOTS","APRON KULIT LAS",
+  "KACAMATA GOGGLE","EARMUFF PEREDAM","JAS HUJAN PVC",
+];
+const WAREHOUSES = ["Gudang Pusat","Gudang Produksi A","Gudang Produksi B","Gudang Cabang Bekasi"];
+const CATEGORIES = ["APD Tangan","APD Kepala","APD Mata","APD Kaki","APD Pernapasan","Seragam"];
+const UNIT_RULES = [
+  { match:/SARUNG TANGAN|SEPATU|BOOTS|EARPLUG/, unit:"Pasang" },
+  { match:/KACA/, unit:"Lembar" },
+];
+function getUnit(name){
+  const rule = UNIT_RULES.find(r => r.match.test(name));
+  return rule ? rule.unit : "Pcs";
+}
+
+function seededRandom(seed){
+  let s = seed;
+  return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+}
+
+function generateData(n = 62){
+  const rnd = seededRandom(42);
+  const rows = [];
+  for(let i = 1; i <= n; i++){
+    const profile = rnd();
+    const isFast = profile < 0.35;
+    const isSlow = profile >= 0.35 && profile < 0.7;
+    const isDead = profile >= 0.7;
+
+    const fastQty = isFast ? Math.round(rnd() * 900) : (rnd() < 0.15 ? Math.round(rnd() * 40) : 0);
+    const hppFast = fastQty * Math.round(300 + rnd() * 2500);
+    const fastQtyMengendap = isFast ? Math.round(rnd() * 250) : (rnd() < 0.15 ? Math.round(rnd() * 30) : 0);
+    const hppFastMengendap = fastQtyMengendap * Math.round(300 + rnd() * 2500);
+
+    const slowQtyKeluar = isSlow ? Math.round(rnd() * 400) : (rnd() < 0.1 ? Math.round(rnd() * 60) : 0);
+    const hppSlowKeluar = slowQtyKeluar * Math.round(400 + rnd() * 3000);
+    const slowQtyMengendap = isSlow ? Math.round(rnd() * 1700) : (rnd() < 0.2 ? Math.round(rnd() * 100) : 0);
+    const hppSlowMengendap = slowQtyMengendap * Math.round(300 + rnd() * 2200);
+
+    const deadQtyKeluar = isDead ? Math.round(rnd() * 10) : 0;
+    const hppDeadKeluar = deadQtyKeluar * Math.round(500 + rnd() * 4000);
+    const deadQtyMengendap = isDead ? Math.round(rnd() * 12) : 0;
+    const hppDeadMengendap = deadQtyMengendap * Math.round(500 + rnd() * 90000);
+
+    const baseName = ITEM_NAMES[i % ITEM_NAMES.length];
+    rows.push({
+      id: i,
+      kode: `APD-${String(i).padStart(5,"0")}`,
+      nama: baseName + (i > ITEM_NAMES.length ? ` [VAR-${Math.ceil(i / ITEM_NAMES.length)}]` : ""),
+      kategori: CATEGORIES[i % CATEGORIES.length],
+      gudang: WAREHOUSES[i % WAREHOUSES.length],
+      satuan: getUnit(baseName),
+      fastQty, hppFast, fastQtyMengendap, hppFastMengendap,
+      slowQtyKeluar, hppSlowKeluar, slowQtyMengendap, hppSlowMengendap,
+      deadQtyKeluar, hppDeadKeluar, deadQtyMengendap, hppDeadMengendap,
+      status: isFast ? "Fast Moving" : isSlow ? "Slow Moving" : "Dead Stock",
+    });
+  }
+  return rows;
+}
+
+const DATA = generateData();
+const PAGE_SIZE = 10;
+
+const fmtIDR = (n) => "Rp " + Math.round(n).toLocaleString("id-ID");
+const fmtNum = (n) => n.toLocaleString("id-ID");
+
+const COLUMNS = [
+  { key:"fastQty", label:"Fast Moving (<1 Bln)", group:"fast" },
+  { key:"hppFast", label:"HPP (Fast)", group:"fast", currency:true },
+  { key:"fastQtyMengendap", label:"Fast (Qty Mengendap)", group:"fast" },
+  { key:"hppFastMengendap", label:"Fast (HPP Mengendap)", group:"fast", currency:true },
+  { key:"slowQtyKeluar", label:"Slow (Qty Keluar)", group:"slow" },
+  { key:"hppSlowKeluar", label:"Slow (HPP Keluar)", group:"slow", currency:true },
+  { key:"slowQtyMengendap", label:"Slow (Qty Mengendap)", group:"slow" },
+  { key:"hppSlowMengendap", label:"Slow (HPP Mengendap)", group:"slow", currency:true },
+  { key:"deadQtyKeluar", label:"Dead (Qty Keluar)", group:"dead" },
+  { key:"hppDeadKeluar", label:"Dead (HPP Keluar)", group:"dead", currency:true },
+  { key:"deadQtyMengendap", label:"Dead (Qty Mengendap)", group:"dead" },
+  { key:"hppDeadMengendap", label:"Dead (HPP Mengendap)", group:"dead", currency:true },
+];
+
+const STATUS_CLASS = { "Fast Moving":"fast", "Slow Moving":"slow", "Dead Stock":"dead" };
+
+/* ---------------- Icons (inline SVG strings) ---------------- */
+const ICON = {
+  trendUp: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
+  trendDown: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>`,
+  minus: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
+  pkg: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+  chevUp: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`,
+  chevDown: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
+  chevBoth: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 15 12 20 17 15"/><polyline points="7 9 12 4 17 9"/></svg>`,
+  mapPin: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  tag: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41 13.42 20.6a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`,
+};
+
+/* ---------------- State ---------------- */
+let state = { search:"", category:"Semua Kategori", warehouse:"Semua Gudang", sortKey:null, sortDir:"asc", page:1, pageSize:10 };
+
+/* ---------------- Totals for summary cards ---------------- */
+const totals = DATA.reduce((acc, r) => {
+  acc.hppFast += r.hppFast;
+  acc.hppFastMengendap += r.hppFastMengendap;
+  acc.hppSlowKeluar += r.hppSlowKeluar;
+  acc.hppSlowMengendap += r.hppSlowMengendap;
+  acc.hppDeadKeluar += r.hppDeadKeluar;
+  acc.hppDeadMengendap += r.hppDeadMengendap;
+  return acc;
+}, { hppFast:0, hppFastMengendap:0, hppSlowKeluar:0, hppSlowMengendap:0, hppDeadKeluar:0, hppDeadMengendap:0 });
+
+function renderSummaryCards(){
+  const cards = [
+    { label:"HPP Fast Moving (&lt;1 Bln)", value: fmtIDR(totals.hppFast), icon: ICON.trendUp, bg:"var(--blue-600)" },
+    { label:"HPP Fast Moving (Mengendap)", value: fmtIDR(totals.hppFastMengendap), icon: ICON.minus, bg:"var(--blue-400)" },
+    { label:"HPP Slow (Keluar)", value: fmtIDR(totals.hppSlowKeluar), icon: ICON.pkg, bg:"var(--blue-400)" },
+    { label:"HPP Slow (Mengendap)", value: fmtIDR(totals.hppSlowMengendap), icon: ICON.minus, bg:"var(--slate-500)" },
+    { label:"HPP Dead Stock (Keluar)", value: fmtIDR(totals.hppDeadKeluar), icon: ICON.trendDown, bg:"var(--slate-700)" },
+    { label:"HPP Dead Stock (Mengendap)", value: fmtIDR(totals.hppDeadMengendap), icon: ICON.trendDown, bg:"var(--slate-800)" },
+  ];
+  document.getElementById("summaryCards").innerHTML = cards.map(c => `
+    <div class="card">
+      <div class="icon" style="background:${c.bg}">${c.icon}</div>
+      <div>
+        <div class="label">${c.label}</div>
+        <div class="value">${c.value}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+/* ---------------- Rekap By Gudang ---------------- */
+function computeGudangRecap(){
+  const map = {};
+  WAREHOUSES.forEach(w => {
+    map[w] = { gudang:w, hppFast:0, hppFastMengendap:0, hppSlowKeluar:0, hppSlowMengendap:0, hppDeadKeluar:0, hppDeadMengendap:0 };
+  });
+  DATA.forEach(r => {
+    const g = map[r.gudang];
+    if(!g) return;
+    g.hppFast += r.hppFast;
+    g.hppFastMengendap += r.hppFastMengendap;
+    g.hppSlowKeluar += r.hppSlowKeluar;
+    g.hppSlowMengendap += r.hppSlowMengendap;
+    g.hppDeadKeluar += r.hppDeadKeluar;
+    g.hppDeadMengendap += r.hppDeadMengendap;
+  });
+  return WAREHOUSES.map(w => map[w]);
+}
+
+function renderRekapGudang(){
+  const rows = computeGudangRecap();
+
+  const cell = (n) => `Rp ${n ? Math.round(n).toLocaleString("id-ID") : "-"}`;
+
+  const body = document.getElementById("recapBody");
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td class="recap-gudang">${r.gudang}</td>
+      <td>${cell(r.hppFast)}</td>
+      <td>${cell(r.hppFastMengendap)}</td>
+      <td>${cell(r.hppSlowKeluar)}</td>
+      <td>${cell(r.hppSlowMengendap)}</td>
+      <td>${cell(r.hppDeadKeluar)}</td>
+      <td>${cell(r.hppDeadMengendap)}</td>
+    </tr>
+  `).join("");
+}
+
+/* ---------------- Filter dropdowns ---------------- */
+function renderFilterOptions(){
+  const catSel = document.getElementById("categorySelect");
+  catSel.innerHTML = ["Semua Kategori", ...CATEGORIES].map(c => `<option value="${c}">${c}</option>`).join("");
+  const whSel = document.getElementById("warehouseSelect");
+  whSel.innerHTML = ["Semua Gudang", ...WAREHOUSES].map(w => `<option value="${w}">${w}</option>`).join("");
+}
+
+/* ---------------- Table header (sortable) ---------------- */
+function renderSubHeader(){
+  const row = document.getElementById("subHeaderRow");
+  row.innerHTML = COLUMNS.map(col => {
+    let icon = ICON.chevBoth;
+    if(state.sortKey === col.key) icon = state.sortDir === "asc" ? ICON.chevUp : ICON.chevDown;
+    return `<th class="group-${col.group}" data-key="${col.key}"><span class="th-inner">${col.label}<span class="sort-icon">${icon}</span></span></th>`;
+  }).join("");
+  row.querySelectorAll("th").forEach(th => {
+    th.addEventListener("click", () => {
+      const key = th.dataset.key;
+      if(state.sortKey === key){ state.sortDir = state.sortDir === "asc" ? "desc" : "asc"; }
+      else { state.sortKey = key; state.sortDir = "asc"; }
+      state.page = 1;
+      renderAll();
+    });
+  });
+}
+
+/* ---------------- Filtering / sorting / pagination ---------------- */
+function getFiltered(){
+  let rows = DATA.filter(r => {
+    const s = state.search.toLowerCase();
+    const matchSearch = !s || r.kode.toLowerCase().includes(s) || r.nama.toLowerCase().includes(s);
+    const matchCategory = state.category === "Semua Kategori" || r.kategori === state.category;
+    const matchWarehouse = state.warehouse === "Semua Gudang" || r.gudang === state.warehouse;
+    return matchSearch && matchCategory && matchWarehouse;
+  });
+  if(state.sortKey){
+    rows = [...rows].sort((a,b) => {
+      const va = a[state.sortKey], vb = b[state.sortKey];
+      return state.sortDir === "asc" ? va - vb : vb - va;
+    });
+  }
+  return rows;
+}
+
+function renderTableBody(){
+  const filtered = getFiltered();
+  const effPageSize = state.pageSize === "all" ? Math.max(filtered.length,1) : state.pageSize;
+  const totalPages = Math.max(1, Math.ceil(filtered.length / effPageSize));
+  if(state.page > totalPages) state.page = totalPages;
+  const start = (state.page - 1) * effPageSize;
+  const pageRows = filtered.slice(start, start + effPageSize);
+
+  const body = document.getElementById("tableBody");
+  if(pageRows.length === 0){
+    body.innerHTML = `<tr class="empty-row"><td colspan="15">Tidak ada data yang sesuai dengan filter pencarian.</td></tr>`;
+  } else {
+    body.innerHTML = pageRows.map(r => `
+      <tr data-id="${r.id}">
+        <td class="sticky-col col0">${r.gudang}</td>
+        <td class="sticky-col col1 code">${r.kode}</td>
+        <td class="sticky-col col2 name">${r.nama}<span class="badge ${STATUS_CLASS[r.status]}">${r.status.split(" ")[0]}</span></td>
+        <td class="num ${r.fastQty ? "" : "zero"}">${fmtNum(r.fastQty)} ${r.satuan}</td>
+        <td class="num money ${r.hppFast ? "" : "zero"}">${r.hppFast ? fmtIDR(r.hppFast) : "0"}</td>
+        <td class="num ${r.fastQtyMengendap ? "" : "zero"}">${fmtNum(r.fastQtyMengendap)} ${r.satuan}</td>
+        <td class="num money ${r.hppFastMengendap ? "" : "zero"}">${r.hppFastMengendap ? fmtIDR(r.hppFastMengendap) : "0"}</td>
+        <td class="num ${r.slowQtyKeluar ? "" : "zero"}">${fmtNum(r.slowQtyKeluar)} ${r.satuan}</td>
+        <td class="num money ${r.hppSlowKeluar ? "" : "zero"}">${r.hppSlowKeluar ? fmtIDR(r.hppSlowKeluar) : "0"}</td>
+        <td class="num ${r.slowQtyMengendap ? "" : "zero"}">${fmtNum(r.slowQtyMengendap)} ${r.satuan}</td>
+        <td class="num money ${r.hppSlowMengendap ? "" : "zero"}">${r.hppSlowMengendap ? fmtIDR(r.hppSlowMengendap) : "0"}</td>
+        <td class="num ${r.deadQtyKeluar ? "" : "zero"}">${fmtNum(r.deadQtyKeluar)} ${r.satuan}</td>
+        <td class="num money dead ${r.hppDeadKeluar ? "" : "zero"}">${r.hppDeadKeluar ? fmtIDR(r.hppDeadKeluar) : "0"}</td>
+        <td class="num ${r.deadQtyMengendap ? "" : "zero"}">${fmtNum(r.deadQtyMengendap)} ${r.satuan}</td>
+        <td class="num money dead ${r.hppDeadMengendap ? "" : "zero"}">${r.hppDeadMengendap ? fmtIDR(r.hppDeadMengendap) : "0"}</td>
+      </tr>
+    `).join("");
+    body.querySelectorAll("tr").forEach(tr => {
+      tr.addEventListener("click", () => openModal(Number(tr.dataset.id)));
+    });
+  }
+
+  document.getElementById("pageInfo").innerHTML = filtered.length === 0
+    ? "Menampilkan <b>0</b> data"
+    : `Menampilkan <b>${start + 1}</b> – <b>${Math.min(start + effPageSize, filtered.length)}</b> dari <b>${filtered.length.toLocaleString("id-ID")}</b> data <span style="color:var(--slate-400)">(total sistem: 9.563 data)</span>`;
+  document.getElementById("pgCount").textContent = `${state.page} / ${totalPages}`;
+  document.getElementById("prevBtn").disabled = state.page === 1;
+  document.getElementById("nextBtn").disabled = state.page === totalPages;
+}
+
+function renderAll(){
+  renderSubHeader();
+  renderTableBody();
+}
+
+/* ---------------- Drill-down modal ---------------- */
+function openModal(id){
+  const item = DATA.find(d => d.id === id);
+  if(!item) return;
+  const rnd = seededRandom(item.id * 7);
+  const history = Array.from({length:6}).map((_, idx) => {
+    const isIn = rnd() > 0.45;
+    const qty = Math.round(10 + rnd() * 200);
+    const date = new Date(2026, 6 - idx, Math.round(1 + rnd() * 27));
+    return {
+      date: date.toLocaleDateString("id-ID", { day:"2-digit", month:"short", year:"numeric" }),
+      type: isIn ? "Masuk" : "Keluar",
+      batch: `BTC-${2026 - Math.floor(idx/3)}${String(Math.round(rnd() * 900) + 100)}`,
+      qty, hpp: qty * Math.round(400 + rnd() * 2500),
+    };
+  });
+
+  document.getElementById("modalKode").textContent = item.kode;
+  document.getElementById("modalNama").textContent = item.nama;
+  document.getElementById("modalTags").innerHTML = `
+    <span class="badge ${STATUS_CLASS[item.status]}" style="margin:0">${item.status}</span>
+    <span>${ICON.mapPin} ${item.gudang}</span>
+    <span>${ICON.tag} ${item.kategori}</span>
+  `;
+  document.getElementById("modalTimeline").innerHTML = history.map(h => `
+    <li>
+      <span class="dot ${h.type === "Masuk" ? "in" : "out"}"></span>
+      <div class="row1">
+        <span class="ttl">${h.type === "Masuk" ? "Barang Masuk" : "Barang Keluar / Pemakaian"}</span>
+        <span class="date">${h.date}</span>
+      </div>
+      <div class="batch">Batch: ${h.batch}</div>
+      <div class="figs">
+        <span>Qty: <b>${fmtNum(h.qty)} ${item.satuan}</b></span>
+        <span>HPP: <b>${fmtIDR(h.hpp)}</b></span>
+      </div>
+    </li>
+  `).join("");
+
+  document.getElementById("overlay").classList.add("open");
+}
+function closeModal(){ document.getElementById("overlay").classList.remove("open"); }
+
+/* ---------------- Event bindings ---------------- */
+document.getElementById("searchInput").addEventListener("input", (e) => {
+  state.search = e.target.value; state.page = 1; renderTableBody();
+});
+document.getElementById("categorySelect").addEventListener("change", (e) => {
+  state.category = e.target.value; state.page = 1; renderTableBody();
+});
+document.getElementById("warehouseSelect").addEventListener("change", (e) => {
+  state.warehouse = e.target.value; state.page = 1; renderTableBody();
+});
+document.getElementById("prevBtn").addEventListener("click", () => { if(state.page > 1){ state.page--; renderTableBody(); } });
+document.getElementById("nextBtn").addEventListener("click", () => { state.page++; renderTableBody(); });
+document.getElementById("pageSizeSelect").addEventListener("change", (e) => {
+  state.pageSize = e.target.value === "all" ? "all" : parseInt(e.target.value, 10);
+  state.page = 1;
+  renderTableBody();
+});
+document.getElementById("closeModal").addEventListener("click", closeModal);
+document.getElementById("overlay").addEventListener("click", (e) => { if(e.target.id === "overlay") closeModal(); });
+
+/* ---------------- Init ---------------- */
+renderSummaryCards();
+renderRekapGudang();
+renderFilterOptions();
+renderAll();
+</script>
+</body>
+</html>
