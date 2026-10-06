@@ -244,6 +244,37 @@
     font-size:12.5px;font-weight:700;color:var(--blue-900);
   }
 
+  /* ===== Budget ===== */
+  .budget-panel .cpanel-head{padding-bottom:12px;}
+  .budget-body{padding:0 16px 14px;}
+  .budget-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;}
+  .budget-cards .mcard .mvalue{font-size:20px;}
+  .budget-month-wrap{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;align-items:start;}
+  .budget-chart{position:relative;height:300px;}
+  table.btable{width:100%;border-collapse:collapse;font-size:12.5px;}
+  table.btable th{
+    text-align:right;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+    color:var(--ink-faint);padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  table.btable th:first-child,table.btable td:first-child{text-align:left;}
+  table.btable td{padding:9px 10px;border-bottom:1px solid var(--line-soft);text-align:right;white-space:nowrap;}
+  table.btable td.num{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--ink-soft);}
+  table.btable td.mon{font-weight:700;color:var(--ink);}
+  table.btable tr.total td{background:var(--surface-soft);font-weight:700;color:var(--blue-900);border-bottom:none;}
+  table.btable tr.total td.num{color:var(--blue-900);}
+  .sel-pos{color:var(--up)!important;}
+  .sel-neg{color:var(--down)!important;}
+  .absorb{display:flex;align-items:center;gap:8px;justify-content:flex-end;}
+  .absorb-track{width:70px;height:7px;background:var(--flat-bg);border-radius:99px;overflow:hidden;}
+  .absorb-fill{height:100%;border-radius:99px;background:var(--blue-500);}
+  .absorb-fill.over{background:var(--down);}
+  .absorb-pct{min-width:48px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;}
+  .total-bar{margin-top:4px;}
+  .total-bar-track{height:14px;background:var(--flat-bg);border-radius:99px;overflow:hidden;}
+  .total-bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--blue-500),var(--blue-700));}
+  .total-bar-fill.over{background:linear-gradient(90deg,#E8768A,var(--down));}
+  .total-bar-meta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-faint);margin-top:6px;font-weight:600;}
+
   .note-strip{
     display:flex;align-items:center;gap:10px;margin-top:16px;padding:10px 14px;
     background:#EEF3FC;border:1px dashed #C7D6F2;border-radius:12px;
@@ -259,6 +290,9 @@
     .cgrid{grid-template-columns:1fr;}
     .cpanel-body{grid-template-columns:1fr;}
     .chart-box{height:200px;}
+    .budget-cards{grid-template-columns:repeat(2,1fr);}
+    .budget-month-wrap{grid-template-columns:1fr;}
+    .budget-body{overflow-x:auto;}
   }
   @media (max-width:640px){
     .metrics-grid{grid-template-columns:repeat(2,1fr);}
@@ -319,6 +353,22 @@
       <div class="section-sub">Bar / Pie · dapat diurutkan per nama atau nilai</div>
     </div> -->
     <div class="cgrid" id="chartsGrid"></div>
+  </section>
+
+  <!-- BUDGET -->
+  <section class="section">
+    <div class="cpanel budget-panel">
+      <div class="cpanel-head">
+        <div><h3>Budget vs Realisasi PO</h3><div class="csub">Budget dibandingkan Sum DPP PO · Selisih = Budget − Realisasi</div></div>
+        <div class="ctrl-row">
+          <div class="seg" id="budgetViewSeg">
+            <button type="button" data-v="month" class="active">Per Bulan</button>
+            <button type="button" data-v="total">Total</button>
+          </div>
+        </div>
+      </div>
+      <div class="budget-body" id="budgetBody"></div>
+    </div>
   </section>
 
   <div class="note-strip">
@@ -593,6 +643,120 @@ chartPanelDefs.forEach(def=>{
     });
   }
 });
+
+/* ============ BUDGET ============ */
+// Realisasi = Sum DPP PO per bulan (total sama dengan kartu PO Amount)
+const budgetData = [
+  {month:'Januari',  budget:1750000000, actual:1650320410},
+  {month:'Februari', budget:1700000000, actual:1720455230},
+  {month:'Maret',    budget:1850000000, actual:1985610780},
+  {month:'April',    budget:1900000000, actual:1812340125},
+  {month:'Mei',      budget:1800000000, actual:1840288901},
+  {month:'Juni',     budget:1750000000, actual:1812829480},
+];
+
+function budgetCalc(budget, actual){
+  const diff = budget - actual;                       // + hemat, − melebihi budget
+  const diffPct = budget ? diff / budget * 100 : null; // proteksi bagi nol
+  const usedPct = budget ? actual / budget * 100 : null;
+  return {diff, diffPct, usedPct, over: diff < 0};
+}
+const fmtSigned = n => (n>0?'+':n<0?'−':'') + fmtRp(Math.abs(n));
+const fmtPct = n => n===null ? '–' : (n>0?'+':n<0?'−':'') + Math.abs(n).toFixed(1) + '%';
+const selClass = n => n>0 ? 'sel-pos' : n<0 ? 'sel-neg' : '';
+
+let budgetChart = null;
+function renderBudget(view){
+  const body = document.getElementById('budgetBody');
+  if(budgetChart){ budgetChart.destroy(); budgetChart = null; }
+  const tb = budgetData.reduce((s,x)=>s+x.budget,0);
+  const ta = budgetData.reduce((s,x)=>s+x.actual,0);
+  const t = budgetCalc(tb, ta);
+
+  if(view === 'total'){
+    const card = (title, val, accent, foot) => `
+      <div class="mcard" style="--accent:${accent}">
+        <div class="mtitle"><span class="dot"></span>${title}</div>
+        <div class="mvalue">${val}</div>
+        <div class="mfoot">${foot}</div>
+      </div>`;
+    const chip = (cls, txt) => `<span class="trend-chip ${cls}">${txt}</span>`;
+    const stateChip = t.over ? chip('down','Melebihi Budget') : chip('up','Dalam Budget');
+    body.innerHTML = `
+      <div class="budget-cards">
+        ${card('Total Budget','Rp '+fmtRp(tb),'var(--blue-600)',`<span class="mfoot-label">${budgetData.length} bulan · Jan – Jun</span>`)}
+        ${card('Total Realisasi PO','Rp '+fmtRp(ta),'var(--indigo-600)',`<span class="mfoot-label">Sum DPP PO</span>`)}
+        ${card('Selisih (Budget − Realisasi)', `<span class="${selClass(t.diff)}">${t.diff<0?'−':''}Rp ${fmtRp(Math.abs(t.diff))}</span>`, t.over?'var(--down)':'var(--up)', stateChip)}
+        ${card('Selisih %', `<span class="${selClass(t.diff)}">${fmtPct(t.diffPct)}</span>`, t.over?'var(--down)':'var(--up)', `<span class="mfoot-label">Penyerapan ${t.usedPct===null?'–':t.usedPct.toFixed(1)+'%'} dari budget</span>`)}
+      </div>
+      <div class="total-bar">
+        <div class="total-bar-track"><div class="total-bar-fill ${t.over?'over':''}" style="width:${Math.min(t.usedPct||0,100)}%"></div></div>
+        <div class="total-bar-meta"><span>Realisasi Rp ${fmtRp(ta)}</span><span>${t.usedPct===null?'–':t.usedPct.toFixed(1)+'%'} terserap</span><span>Budget Rp ${fmtRp(tb)}</span></div>
+      </div>`;
+    return;
+  }
+
+  const rows = budgetData.map(r => {
+    const c = budgetCalc(r.budget, r.actual);
+    return `<tr>
+      <td class="mon">${r.month}</td>
+      <td class="num">${fmtRp(r.budget)}</td>
+      <td class="num">${fmtRp(r.actual)}</td>
+      <td class="num ${selClass(c.diff)}">${fmtSigned(c.diff)}</td>
+      <td class="num ${selClass(c.diff)}">${fmtPct(c.diffPct)}</td>
+      <td><div class="absorb"><div class="absorb-track"><div class="absorb-fill ${c.over?'over':''}" style="width:${Math.min(c.usedPct||0,100)}%"></div></div><span class="absorb-pct">${c.usedPct===null?'–':c.usedPct.toFixed(1)+'%'}</span></div></td>
+    </tr>`;
+  }).join('');
+  body.innerHTML = `
+    <div class="budget-month-wrap">
+      <div style="overflow-x:auto">
+        <table class="btable">
+          <thead><tr><th>Bulan</th><th>Budget (Rp)</th><th>Realisasi (Rp)</th><th>Selisih (Rp)</th><th>Selisih %</th><th>Penyerapan</th></tr></thead>
+          <tbody>${rows}
+            <tr class="total">
+              <td>Total</td>
+              <td class="num">${fmtRp(tb)}</td>
+              <td class="num">${fmtRp(ta)}</td>
+              <td class="num ${selClass(t.diff)}">${fmtSigned(t.diff)}</td>
+              <td class="num ${selClass(t.diff)}">${fmtPct(t.diffPct)}</td>
+              <td><div class="absorb"><span class="absorb-pct">${t.usedPct===null?'–':t.usedPct.toFixed(1)+'%'}</span></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="budget-chart"><canvas id="chBudget"></canvas></div>
+    </div>`;
+  budgetChart = new Chart(document.getElementById('chBudget').getContext('2d'), {
+    type:'bar',
+    data:{
+      labels:budgetData.map(x=>x.month.slice(0,3)),
+      datasets:[
+        {label:'Budget', data:budgetData.map(x=>x.budget), backgroundColor:'#B7C9F0', borderRadius:5, maxBarThickness:22},
+        {label:'Realisasi', data:budgetData.map(x=>x.actual),
+          backgroundColor:budgetData.map(x=>x.actual>x.budget?'#DB4B5C':'#2F63E0'), borderRadius:5, maxBarThickness:22}
+      ]
+    },
+    options:{
+      maintainAspectRatio:false,
+      scales:{
+        x:{grid:{display:false}, ticks:{font:{size:10.5}, color:'#5B6779'}},
+        y:{grid:{color:'#EEF1F6'}, ticks:{callback:v=>(v/1e6).toFixed(0)+'jt', font:{size:10}, color:'#8B95A6'}}
+      },
+      plugins:{
+        legend:{display:true, position:'bottom', labels:{boxWidth:10, boxHeight:10, font:{size:11}}},
+        tooltip:{callbacks:{label:c=>c.dataset.label+': Rp '+fmtRp(c.raw)}}
+      }
+    }
+  });
+}
+document.querySelectorAll('#budgetViewSeg button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#budgetViewSeg button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderBudget(btn.dataset.v);
+  });
+});
+renderBudget('month');
 </script>
 </body>
 </html>
